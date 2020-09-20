@@ -72,7 +72,6 @@ kg_to_lb <- misc_constants$Kg_to_lb
 
 ## FOOD ###############################################################################################################
 food_calculations <- function(cex_data_input, general_data){
-  print(general_data)
   cex_data <- cex_data_input
   #if(is.na(cex_data_input)){
   #  cex_data <- read.csv("charlottesville_footprint.csv", header = TRUE, stringsAsFactors = FALSE, strip.white = TRUE)
@@ -268,8 +267,7 @@ food_calculations <- function(cex_data_input, general_data){
   num_of_households <- as.numeric(general_data[,'Households..total.'])
   households_on_snap <- snap_percentages * num_of_households
   avg_snap_money_per_household <- 1978.91666666667   
-  avg_money_spent_on_snap <- households_on_snap * avg_snap_money_per_household
-  
+  avg_money_spent_on_snap <- snap_percentages * num_of_households * avg_snap_money_per_household 
   snap_percentage_of_total <- c(0.048,	0.048,	0.048,	0.048,	0.093,	0.072,	0.000470098,
                                 0.00778274,	0.006999243,	0.000417865,	0.003604088,
                                 0.00778274,	0.000313399,	0.007051476,	0.004178653,
@@ -291,9 +289,8 @@ food_calculations <- function(cex_data_input, general_data){
   snap_weight_by_category <- matrix(0, nrow=nrow(cex_data), ncol=length(avg_price_entries))
   for(i in 1:nrow(cex_data)){
     snap_weight_by_category[i,] <- avg_money_spent_on_snap[i] * snap_percentage_of_total / 
-      avg_price / misc_constants$Kg_to_lb
+      avg_price[i] / misc_constants$Kg_to_lb
   }
-  
   snap_beef_col <- c(1, 17, 38)
   snap_pork_col <- c(2, 16, 37)
   snap_chicken_col <- c(3, 15, 36)
@@ -436,7 +433,7 @@ food_calculations <- function(cex_data_input, general_data){
                                         nuts_production_n, fruits_production_n, oils_production_n,
                                         beans_production_n, spices_production_n, potatoes_production_n,
                                         coffee_tea_production_n, sugar_production_n, vegetables_production_n)
-  
+ 
   total_food_production_n <- rowSums(total_food_production_totals)
   
   fah_food <- cbind(fah_beef_n, fah_pork_n, fah_chicken_n, fah_cheese_n, fah_eggs_n, fah_milk_n,
@@ -497,50 +494,50 @@ pet_calculations <- function(general_data){
     index <- which(grepl(t, food_constants$`Protein contents`))
     pet_food_types_index <- c(pet_food_types_index, index)
   }
-  
   cat_food_per_block <- avg_cats_person * avg_cat_food_year * general_data[,'Total.Population.of.BG'] 
   dog_food_per_block <- avg_dogs_person * avg_dog_food_year * general_data[,'Total.Population.of.BG']
   
   ## Find average nitrogen factor per block per ingredient in pet food type
   cat_waste <- c()
   dog_waste <- c()
+  amount_cat_food <- c()
+  amount_dog_food <- c()
   for (i in 3:7){
     avg_cat_food_type <- as.numeric(pet_constants[i, "Cats"]) ##average percent of that food type in cat food
     avg_dog_food_type <- as.numeric(pet_constants[i, "Dogs"]) ##average percent of that food type in dog food
     food_type_factor <- as.numeric(food_constants$`Updated N content`[pet_food_types_index[i-2]])
-    cat_waste_block <- avg_cat_food_type * food_type_factor * cat_food_per_block
-    dog_waste_block <- avg_dog_food_type * food_type_factor * dog_food_per_block
+    cat_waste_block <- avg_cat_food_type * food_type_factor * cat_food_per_block 
+    dog_waste_block <- avg_dog_food_type * food_type_factor * dog_food_per_block 
     cat_waste <- c(cat_waste, cat_waste_block)
     dog_waste <- c(dog_waste, dog_waste_block)
+    amount_cat_food <- c(amount_cat_food, avg_cat_food_type * cat_food_per_block)
+    amount_dog_food <- c(amount_dog_food, avg_dog_food_type * dog_food_per_block)
   }
-  
   cat_waste <- data.frame(matrix(cat_waste, length(cat_food_per_block), 5))
   dog_waste <- data.frame(matrix(dog_waste, length(dog_food_per_block), 5))
+  amount_pet_food <- data.frame(matrix(amount_cat_food + amount_dog_food, length(cat_food_per_block), 5)) 
+  
   pet_waste <- cat_waste + dog_waste
   colnames(cat_waste) <- pet_food_types
   colnames(dog_waste) <- pet_food_types
-  
   ## Sum for each block and multiply by nitrogen up take in ground
-  cat_waste_n <- misc_constants$Pet_Waste_N_Uptake_Factor_of_Ground * (
-    cat_waste$Chicken + cat_waste$Grains + cat_waste$Beef + cat_waste$Fish)
-  dog_waste_n <- misc_constants$Pet_Waste_N_Uptake_Factor_of_Ground * (
-    dog_waste$Chicken + dog_waste$Grains + dog_waste$Beef + dog_waste$Fish)
-  pet_waste_n <- cat_waste_n + dog_waste_n
-
+  pet_waste_n <- rowSums(pet_waste * misc_constants$Pet_Waste_N_Uptake_Factor_of_Ground)
+  
+  
   ## Pet Food 
   pet_food <- c()
   ## for each ingredient in pet food, find the virtual Nitrogen, Nitrogen from transport, and food waste
   for (i in 1:5){
     virtual_n <- pet_waste[,i] * food_constants$`Updated VNFs`[pet_food_types_index[i]]
-    num_of_trips <- pet_waste[,i] / food_constants$Food_Truck_Cargo_Capacity[1]
+    num_of_trips <- amount_pet_food[,i] / food_constants$Food_Truck_Cargo_Capacity[1] 
     food_miles <- food_constants$`Food Miles`[1]
     transport_n <- num_of_trips * food_miles * food_constants$Transport_N_EF[1]
     food_waste_n <- pet_waste[,i] * food_constants$`average % food waste (from N-print FY14 2.1)`[pet_food_types_index[i]]
-    pet_food <- c(pet_food , virtual_n, transport_n, food_waste_n)
+    pet_food <- c(pet_food , virtual_n + transport_n + food_waste_n)
   }
   pet_food <- data.frame(matrix(pet_food, length(cat_food_per_block), 5))
   colnames(pet_food) <- pet_food_types
-  pet_food_n <- pet_food$Chicken + pet_food$Grains + pet_food$Beef + pet_food$Fish + pet_food$Beans
+  pet_food_n <- rowSums(pet_food)
   return(cbind(pet_food_n, pet_waste_n))
 }
 #pet_data <- pet_calculations(general_data)
@@ -611,22 +608,33 @@ transportation_calculations <- function(cex_data, motorcycles_miles_year_input, 
 ## using Charlottesville's numbers for Motorcycle Miles per year, etc...
 #transport_n <- transportation_calculations(cex_data, 378052, 199774486, 26507935, 611792, 4301174)
 ## ELECTRICITY ########################################################################################################
-electricity_calculations <- function(cex_data, general_data, electricity_by_residents_input, electricity_by_businesses_input){
+electricity_calculations <- function(cex_data, general_data, electricity_by_residents_input, electricity_by_businesses_input, egridRegion){
   dollars_spent_electricity <- cex_data[,"X3063_X"]
   num_of_businesses <- general_data[,"Number.of.Businesses.in.BG"]
   # electricity_by_residents <- 188422670 # Charlottesville's number
   # electricity_by_businesses <- 248985273.4 #Charlottesville's number
   
+  regions <- c("AKGD", "AKMS", "AZNM", "CAMX", "ERCT", "FRCC", "HIMS", "HIOA", "MROE", "MROW", "NEWE", "NWPP", "NYCW", "NYLI", "NYUP", 
+               "RFCE", "RFCM", "RFCW", "RMPA", "SPNO", "SPSO", "SRMV", "SRMW", "SRSO", "SRTV", "SRVC")
+  N20_EF_all <- c(0.011, 0.004, 0.011, 0.004, 0.009, 0.009, 0.018, 0.027, 0.025, 0.020, 0.011, 0.009, 0.003, 0.018, 0.002, 0.008, 0.018, 0.017, 0.018, 0.018, 0.013, 0.008, 0.027, 0.012, 0.014, 0.009) # in original units
+  NOx_EF_all <- c(5.5, 7.7, 0.7, 0.5, 0.5, 0.4, 7.6, 3.5, 0.9, 1.0, 0.4, 0.6, 0.3, 0.9, 0.1, 0.3, 0.8, 0.8, 0.7, 0.6, 0.8, 0.6, 1.1, 0.5, 0.6, 0.4)
+  ## convert to units (lb/MWh to kg/kWh)
+  N20_EF_all <- N20_EF_all / 2205
+  NOx_EF_all <- NOx_EF_all / 2205
+  
+  ## Find correct index
+  region_col <- regions == egridRegion
+  
   ## Efficiency in kg/kwh
-  NOx_EF <- as.numeric(electricity_natGas_constants$Electricty[1])
-  N2O_EF <- as.numeric(electricity_natGas_constants$Electricty[2]) 
+  NOx_EF <- (NOx_EF_all[region_col])
+  N2O_EF <- (N20_EF_all[region_col])
   NOx_To_N <- electricity_natGas_constants$Electricty[3]
   N2O_To_N <- electricity_natGas_constants$Electricty[4]
   
   avg_electricity_rate <- sum(dollars_spent_electricity)/electricity_by_residents_input
   kwh_by_residents <- dollars_spent_electricity/avg_electricity_rate
-  kwh_by_businesses <- N2O_EF*(num_of_businesses/sum(electricity_by_businesses_input))
-  kwh_by_businesses <- electricity_by_businesses_input / num_of_businesses
+  kwh_by_businesses <- electricity_by_businesses_input * (num_of_businesses / sum(num_of_businesses))
+ 
   total_kwh_used <- (kwh_by_residents + kwh_by_businesses)
   electricity_n <- total_kwh_used * NOx_EF * NOx_To_N + total_kwh_used * N2O_EF * N2O_To_N
   return(electricity_n)
@@ -638,17 +646,17 @@ nat_gas_calculations <- function(cex_data_input, general_data, total_therms_by_r
   #if(is.na(cex_data_input)){
   #  cex_data_input = cex_data
   #}
+  
   spend_on_nat_gas <- cex_data_input$X3059_X
   avg_rate_for_residents <- sum(spend_on_nat_gas) / total_therms_by_residents
   therms_by_residents <- spend_on_nat_gas / avg_rate_for_residents 
 
   ## Find the therms for businesses in the census block
 #  num_of_business <- general_data[,"Number.of.Businesses.in.BG"]
-  avg_therm_per_business <- total_therms_by_business / sum(general_data[,"Number.of.Businesses.in.BG"])
-  therms_by_business <- general_data[,"Number.of.Businesses.in.BG"] * avg_therm_per_business
+  therms_by_business <- total_therms_by_business /(sum(general_data[,"Number.of.Businesses.in.BG"])) * general_data[,"Number.of.Businesses.in.BG"]/(sum(general_data[,"Number.of.Businesses.in.BG"]))
 
   ## Combine residential and business natural gas use and multiply by constants regarding NO and N2O in   natural gas
-  therms_per_block <- therms_by_residents + total_therms_by_business
+  therms_per_block <- therms_by_residents + therms_by_business
   nat_gas_n <- therms_per_block * 
       (as.numeric(electricity_natGas_constants[1, "Natural_Gas"]) *
        as.numeric(electricity_natGas_constants[3, "Natural_Gas"]) + 

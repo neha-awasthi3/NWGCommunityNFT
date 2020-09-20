@@ -52,8 +52,8 @@ ui <- fluidPage(
                  numericInput("motorcycle_miles_year", "Motorcycles:", value = 1),
                  numericInput("passenger_miles_year", "Passenger Cars:", value = 1),
                  numericInput("light_trucks_miles_year", "Light Duty Trucks:", value = 1),
-                 numericInput("bus_miles_year", "Busses:", value = 1),
-                 numericInput("heavy_trucks_miles_year", "Medium/Heavy Duty Trucks:", value = 1),
+                 numericInput("bus_miles_year", "Buses:", value = 1),
+                 numericInput("heavy_trucks_miles_year", "Medium/Heavy Duty Trucks:", value = 1)
               #   submitButton("Submit")
     ),
     
@@ -91,11 +91,11 @@ server <- function(input, output, session){
   heavy_trucks_miles_year <- reactive({input$heavy_trucks_miles_year})
   total_treated_waterwater_input <- reactive({input$total_treated_wastewater})
   wastewater_treatment_factor_input <- reactive({input$wastewater_removal_factor})
-  therms_by_business_input <- reactive({input$total_therms_by_residents})
+  therms_by_business_input <- reactive({input$total_therms_by_businesses})
   therms_by_residents_input <- reactive({input$total_therms_by_residents})
   electricity_by_businesses <- reactive({input$electricity_by_businesses})
   electricity_by_residents <- reactive({input$electricity_by_residents})
-  
+  region <- reactive({input$region})
   
   cex_data <- eventReactive(input$cex_data, {
     read.csv(input$cex_data$datapath)
@@ -104,18 +104,22 @@ server <- function(input, output, session){
     read.csv(input$block_group_data_entry$datapath)
   })
   observeEvent(input$clear_selected, {
-    updateCheckboxGroupInput(session,"block_groups_f","Block Groups:",choices=block_groups,inline=TRUE)
+    print("clear")
+    print(block_groups)
+    updateCheckboxGroupInput(session,"block_groups_f","Block Groups:",choices = cex_data()$ID,inline=TRUE, selected=NULL)
   })
   observeEvent(input$select_all,{
-    updateCheckboxGroupInput(session,"block_groups_f","Block Groups:",choices=block_groups,inline=TRUE, selected=block_groups)
+    print("select")
+    updateCheckboxGroupInput(session,"block_groups_f","Block Groups:",choices = cex_data()$ID,inline=TRUE, selected=cex_data()$ID)
   })
   observeEvent(input$cex_data, {
     block_groups <- cex_data()$ID
-    updateCheckboxGroupInput(session, "block_groups_f", choices = block_groups, selected = block_groups, inline = TRUE
-  )})
+    updateCheckboxGroupInput(session, "block_groups_f", choices = block_groups, selected = block_groups, inline = TRUE)
+  })
   
   
-  output$table1 <- renderDataTable({updateAll(cex_data(), general_data(), passenger_cars_miles_year(), motorcycles_miles_year(), light_trucks_miles_year(), bus_miles_year(), heavy_trucks_miles_year(), wastewater_treatment_factor_input(), total_treated_waterwater_input(), therms_by_business_input(), therms_by_residents_input(), electricity_by_businesses(), electricity_by_residents())},
+  output$table1 <- renderDataTable({
+    updateAll(cex_data(), general_data(), passenger_cars_miles_year(), motorcycles_miles_year(), light_trucks_miles_year(), bus_miles_year(), heavy_trucks_miles_year(), wastewater_treatment_factor_input(), total_treated_waterwater_input(), therms_by_business_input(), therms_by_residents_input(), electricity_by_businesses(), electricity_by_residents(), region())},
                                    options = list(dom  = '<"top">lrt<"bottom">ip',
                                                   columns = list (
                                                     list(title = "Block Group"),
@@ -129,8 +133,8 @@ server <- function(input, output, session){
                                                   )))
   
   
-  output$plot1 <- renderPlot(summary_graphs_filtered(input$block_groups_f, cex_data(), general_data(), passenger_cars_miles_year(), motorcycles_miles_year(), light_trucks_miles_year(), bus_miles_year(), heavy_trucks_miles_year(), wastewater_treatment_factor_input(), total_treated_waterwater_input(), therms_by_business_input(), therms_by_residents_input(), electricity_by_businesses(), electricity_by_residents()))
-  output$plot2 <- renderPlot(stacked_graphs_filtered(input$block_groups_f, cex_data(), general_data(), passenger_cars_miles_year(), motorcycles_miles_year(), light_trucks_miles_year(), bus_miles_year(), heavy_trucks_miles_year(), wastewater_treatment_factor_input(), total_treated_waterwater_input(), therms_by_business_input(), therms_by_residents_input(), electricity_by_businesses(), electricity_by_residents()))
+  output$plot1 <- renderPlot(summary_graphs_filtered(input$block_groups_f, cex_data(), general_data(), passenger_cars_miles_year(), motorcycles_miles_year(), light_trucks_miles_year(), bus_miles_year(), heavy_trucks_miles_year(), wastewater_treatment_factor_input(), total_treated_waterwater_input(), therms_by_business_input(), therms_by_residents_input(), electricity_by_businesses(), electricity_by_residents(), region()))
+  output$plot2 <- renderPlot(stacked_graphs_filtered(input$block_groups_f, cex_data(), general_data(), passenger_cars_miles_year(), motorcycles_miles_year(), light_trucks_miles_year(), bus_miles_year(), heavy_trucks_miles_year(), wastewater_treatment_factor_input(), total_treated_waterwater_input(), therms_by_business_input(), therms_by_residents_input(), electricity_by_businesses(), electricity_by_residents(), region()))
   
   # Download excel template for Block Group data inputs
   output$downloadBlockGroupInput <- downloadHandler(
@@ -140,7 +144,7 @@ server <- function(input, output, session){
 }
 
 ## Update calculations functions
-updateAll <- function(cex_data, general_data, passenger_cars_miles_year, motorcycle_miles_year, light_trucks_miles_year, bus_miles_year, heavy_trucks_miles_year, wastewater_removal_factor, total_treated_wastewater, therms_by_business, therms_by_residents, electricity_by_businesses, electricity_by_residents){
+updateAll <- function(cex_data, general_data, passenger_cars_miles_year, motorcycle_miles_year, light_trucks_miles_year, bus_miles_year, heavy_trucks_miles_year, wastewater_removal_factor, total_treated_wastewater, therms_by_business, therms_by_residents, electricity_by_businesses, electricity_by_residents, region){
   population_data <- general_data$Total.Population.of.BG
   total_food_production_totals <- food_calculations(cex_data, general_data)
   beef_production_n <- total_food_production_totals[,1]
@@ -167,8 +171,8 @@ updateAll <- function(cex_data, general_data, passenger_cars_miles_year, motorcy
   pet_waste_n <- pet_data[,2]
   wastewater_n <- wastewater_calculations(wastewater_removal_factor, total_treated_wastewater, population_data)
   transportation_n <- transportation_calculations(cex_data, motorcycle_miles_year, passenger_cars_miles_year, light_trucks_miles_year, bus_miles_year, heavy_trucks_miles_year)
-  electricity_n <- electricity_calculations(cex_data, general_data, electricity_by_residents, electricity_by_businesses)
-  nat_gas_n <- nat_gas_calculations(cex_data, general_data, therms_by_business, therms_by_residents)
+  electricity_n <- electricity_calculations(cex_data, general_data, electricity_by_residents, electricity_by_businesses, region)
+  nat_gas_n <- nat_gas_calculations(cex_data, general_data, therms_by_residents, therms_by_business)
   
   combined_by_block_group_n <- total_food_production_n  + pet_food_n + pet_waste_n + wastewater_n +
     transportation_n + electricity_n + nat_gas_n
@@ -188,7 +192,7 @@ updateAll <- function(cex_data, general_data, passenger_cars_miles_year, motorcy
 }
 
 
-summary_graphs_filtered <- function(blockgroups, cex_data, general_data, passenger_cars_miles_year, motorcycle_miles_year, light_trucks_miles_year, bus_miles_year, heavy_trucks_miles_year, wastewater_removal_factor, total_treated_wastewater, therms_by_business, therms_by_residents, electricity_by_businesses, electricity_by_residents){
+summary_graphs_filtered <- function(blockgroups, cex_data, general_data, passenger_cars_miles_year, motorcycle_miles_year, light_trucks_miles_year, bus_miles_year, heavy_trucks_miles_year, wastewater_removal_factor, total_treated_wastewater, therms_by_business, therms_by_residents, electricity_by_businesses, electricity_by_residents, region){
   population_data <- general_data$Total.Population.of.BG
   total_food_production_totals <- food_calculations(cex_data, general_data)
   beef_production_n <- total_food_production_totals[,1]
@@ -215,13 +219,21 @@ summary_graphs_filtered <- function(blockgroups, cex_data, general_data, passeng
   pet_waste_n <- pet_data[,2]
   wastewater_n <- wastewater_calculations(wastewater_removal_factor, total_treated_wastewater, population_data)
   transportation_n <- transportation_calculations(cex_data, motorcycle_miles_year, passenger_cars_miles_year, light_trucks_miles_year, bus_miles_year, heavy_trucks_miles_year)
-  electricity_n <- electricity_calculations(cex_data, general_data, electricity_by_residents, electricity_by_businesses)
-  nat_gas_n <- nat_gas_calculations(cex_data, general_data, therms_by_business, therms_by_residents)
+  electricity_n <- electricity_calculations(cex_data, general_data, electricity_by_residents, electricity_by_businesses, region)
+  nat_gas_n <- nat_gas_calculations(cex_data, general_data, therms_by_residents, therms_by_business)
   
   combined_by_block_group_n <- total_food_production_n  + pet_food_n + pet_waste_n + wastewater_n +
     transportation_n + electricity_n + nat_gas_n
   all_n <- sum(total_food_production_n) + sum(pet_food_n) + sum(pet_waste_n) + sum(wastewater_n) +
     sum(transportation_n) + sum(electricity_n) + sum(nat_gas_n)
+  
+  print(total_food_production_n)
+  print(pet_food_n)
+  print(pet_waste_n)
+  print(wastewater_n)
+  print(transportation_n)
+  print(electricity_n)
+  print(nat_gas_n)
   a_filtered <- ggplot(combined_by_category_filtered(blockgroups, cex_data$ID, total_food_production_n, pet_food_n, pet_waste_n, wastewater_n, transportation_n, electricity_n, nat_gas_n), aes(x="", y=value, fill=group)) + 
     geom_bar(stat="identity", width = 1, color="white") + coord_polar("y", start = 0) + theme_void() +
     scale_fill_viridis(discrete = TRUE, option="C") +
@@ -237,7 +249,7 @@ summary_graphs_filtered <- function(blockgroups, cex_data, general_data, passeng
   return({grid.arrange(a_filtered, b_filtered, ncol=2)})
 }
 
-stacked_graphs_filtered<- function(blockgroups, cex_data, general_data, passenger_cars_miles_year, motorcycle_miles_year, light_trucks_miles_year, bus_miles_year, heavy_trucks_miles_year, wastewater_removal_factor, total_treated_wastewater, therms_by_business, therms_by_residents, electricity_by_businesses, electricity_by_residents){
+stacked_graphs_filtered<- function(blockgroups, cex_data, general_data, passenger_cars_miles_year, motorcycle_miles_year, light_trucks_miles_year, bus_miles_year, heavy_trucks_miles_year, wastewater_removal_factor, total_treated_wastewater, therms_by_business, therms_by_residents, electricity_by_businesses, electricity_by_residents, region){
   population_data <- general_data$Total.Population.of.BG
   total_food_production_totals <- food_calculations(cex_data, general_data)
   beef_production_n <- total_food_production_totals[,1]
@@ -264,8 +276,8 @@ stacked_graphs_filtered<- function(blockgroups, cex_data, general_data, passenge
   pet_waste_n <- pet_data[,2]
   wastewater_n <- wastewater_calculations(wastewater_removal_factor, total_treated_wastewater, population_data)
   transportation_n <- transportation_calculations(cex_data, motorcycle_miles_year, passenger_cars_miles_year, light_trucks_miles_year, bus_miles_year, heavy_trucks_miles_year)
-  electricity_n <- electricity_calculations(cex_data, general_data, electricity_by_residents, electricity_by_businesses)
-  nat_gas_n <- nat_gas_calculations(cex_data, general_data, therms_by_business, therms_by_residents)
+  electricity_n <- electricity_calculations(cex_data, general_data, electricity_by_residents, electricity_by_businesses, region)
+  nat_gas_n <- nat_gas_calculations(cex_data, general_data, therms_by_residents, therms_by_business)
   
   combined_by_block_group_n <- total_food_production_n  + pet_food_n + pet_waste_n + wastewater_n +
     transportation_n + electricity_n + nat_gas_n
