@@ -1,6 +1,5 @@
 aboutText <- mainPanel(
-    HTML("<h1> EGRID and Remember to ask if average $ per household for snap is constant <h1>
-<h2>Community Nigrogen Footprint Calculator </h2>
+    HTML("<h2>Community Nigrogen Footprint Calculator </h2>
 The Community Nitrogen Footprint Calculator is an online tool intended to help show the nitrogen footprint for a locality. The amount of nitrogen from each census block group is calculated and then shown in graphs, maps, and a table. This tool also makes predictions to help show the effect of possible policies that could reduce this footprint.
 <br />
 <br />
