@@ -3,6 +3,8 @@
 source("aboutText.R")
 ## Import Calculations
 source("communityTool.R")
+#install.packages("DT")
+library(DT)
 
 ######################################################################### WEBSITE ######################################
 
@@ -11,7 +13,7 @@ ui <- fluidPage(
   
   sidebarLayout(
     
-    sidebarPanel(style = "overflow-y:scroll; max-height: 600px;",
+    sidebarPanel(style = "overflow-y:scroll; max-height: screen.height-100;",
                  width = 3,
                  fileInput("cex_data", "CEX Data:"),
                  fileInput("block_group_data_entry", "Block Group Data Entry"),
@@ -48,6 +50,10 @@ ui <- fluidPage(
                  numericInput("electricity_by_businesses", "Total Kilowatt Hours Used By Businesses", value=0),
                  numericInput("total_therms_by_residents", "Total Therms Used By Residents (Natural Gas)", value=0),
                  numericInput("total_therms_by_businesses", "Total Therms Used By Businesses (Natural Gas)", value=0),
+                 numericInput("avg_cats_per_person", "Average Cats Per  Person", 
+                              value = round(as.numeric(read_excel("constants.xlsx", sheet = "pet")$Cats[1]), 3)),
+                 numericInput("avg_dogs_per_person", "Average Dogs Per Person",
+                              value = round(as.numeric(read_excel("constants.xlsx", sheet = "pet")$Dogs[1]), 3)),
                  h3("Miles Traveled by:"),
                  numericInput("motorcycle_miles_year", "Motorcycles:", value = 1),
                  numericInput("passenger_miles_year", "Passenger Cars:", value = 1),
@@ -75,7 +81,15 @@ ui <- fluidPage(
         ),
         
         tabPanel("Map"), 
-        tabPanel("Reduction Strategies")
+        tabPanel("Reduction Strategies"),
+        tabPanel("Check Input",
+                 fluidRow(radioButtons("totalOrPerCapita", label="Doesn't do anything yet", choices = c("Total", "Per Capita"),
+                                       selected="Total")),
+                 fluidRow(HTML("Population and Number of Cats and Dogs Per Block Group")),
+                 fluidRow(dataTableOutput('table3')),
+                 fluidRow(HTML("Kilograms of Food Per Category Per Block Group")),
+                 fluidRow(dataTableOutput('table2')))
+        
       )
     )
     
@@ -97,6 +111,9 @@ server <- function(input, output, session){
   electricity_by_residents <- reactive({input$electricity_by_residents})
   region <- reactive({input$region})
   
+  avg_cats_per_person <- reactive({input$avg_cats_per_person})
+  avg_dogs_per_person <- reactive({input$avg_dogs_per_person})
+  
   cex_data <- eventReactive(input$cex_data, {
     read.csv(input$cex_data$datapath)
   })
@@ -104,12 +121,9 @@ server <- function(input, output, session){
     read.csv(input$block_group_data_entry$datapath)
   })
   observeEvent(input$clear_selected, {
-    print("clear")
-    print(block_groups)
     updateCheckboxGroupInput(session,"block_groups_f","Block Groups:",choices = cex_data()$ID,inline=TRUE, selected=NULL)
   })
   observeEvent(input$select_all,{
-    print("select")
     updateCheckboxGroupInput(session,"block_groups_f","Block Groups:",choices = cex_data()$ID,inline=TRUE, selected=cex_data()$ID)
   })
   observeEvent(input$cex_data, {
@@ -117,9 +131,14 @@ server <- function(input, output, session){
     updateCheckboxGroupInput(session, "block_groups_f", choices = block_groups, selected = block_groups, inline = TRUE)
   })
   
-  
+  observeEvent(input$totalOrPerCapita, {
+    
+  })
   output$table1 <- renderDataTable({
-    updateAll(cex_data(), general_data(), passenger_cars_miles_year(), motorcycles_miles_year(), light_trucks_miles_year(), bus_miles_year(), heavy_trucks_miles_year(), wastewater_treatment_factor_input(), total_treated_waterwater_input(), therms_by_business_input(), therms_by_residents_input(), electricity_by_businesses(), electricity_by_residents(), region())},
+    updateAll(cex_data(), general_data(), passenger_cars_miles_year(), motorcycles_miles_year(), light_trucks_miles_year(), bus_miles_year(), 
+              heavy_trucks_miles_year(), wastewater_treatment_factor_input(), total_treated_waterwater_input(), therms_by_business_input(), 
+              therms_by_residents_input(), electricity_by_businesses(), electricity_by_residents(), region(), avg_cats_per_person(), 
+              avg_dogs_per_person())},
                                    options = list(dom  = '<"top">lrt<"bottom">ip',
                                                   columns = list (
                                                     list(title = "Block Group"),
@@ -131,10 +150,57 @@ server <- function(input, output, session){
                                                     list(title = "Natural Gas"),
                                                     list(title = "Total")
                                                   )))
+
+  output$table2 <- renderDataTable({
+    input_check(cex_data(), general_data())
+  },
+  options = list(dom  = '<"top">lrt<"bottom">ip',
+                 columns = list (
+                   list(title = "Block Group"),
+                   list(title = "Beef"),
+                   list(title = "Pork"),
+                   list(title = "Chicken"),
+                   list(title = "Cheese"),
+                   list(title = "Eggs"),
+                   list(title = "Milk"),
+                   list(title = "Fish"),
+                   list(title = "Liquids"),
+                   list(title = "Grains"),
+                   list(title = "Nuts"),
+                   list(title = "Fruits"),
+                   list(title = "Oils"),
+                   list(title = "Beans"),
+                   list(title = "Spices"),
+                   list(title = "Potatoes"),
+                   list(title = "Coffee and Tea"),
+                   list(title = "Sugar"),
+                   list(title = "Vegetables"),
+                   list(title = "Food At Home"),
+                   list(title = "Food Away From Home"),
+                   list(title = "SNAP Food"),
+                   list(title = "Total")
+                 )))
   
-  
-  output$plot1 <- renderPlot(summary_graphs_filtered(input$block_groups_f, cex_data(), general_data(), passenger_cars_miles_year(), motorcycles_miles_year(), light_trucks_miles_year(), bus_miles_year(), heavy_trucks_miles_year(), wastewater_treatment_factor_input(), total_treated_waterwater_input(), therms_by_business_input(), therms_by_residents_input(), electricity_by_businesses(), electricity_by_residents(), region()))
-  output$plot2 <- renderPlot(stacked_graphs_filtered(input$block_groups_f, cex_data(), general_data(), passenger_cars_miles_year(), motorcycles_miles_year(), light_trucks_miles_year(), bus_miles_year(), heavy_trucks_miles_year(), wastewater_treatment_factor_input(), total_treated_waterwater_input(), therms_by_business_input(), therms_by_residents_input(), electricity_by_businesses(), electricity_by_residents(), region()))
+  output$table3 <- renderDataTable({
+    pet_calculations(general_data(), avg_cats_per_person(), avg_dogs_per_person(), TRUE)
+  }, options = list(dom  = '<"top">lrt<"bottom">ip',
+  columns = list (
+    list(title = "Block Group"),
+    list(title = "Population"),
+    list(title = "Number of Cats"),
+    list(title = "Number of Dogs")
+  )))
+    
+    
+  output$plot1 <- renderPlot(summary_graphs_filtered(input$block_groups_f, cex_data(), general_data(), passenger_cars_miles_year(), motorcycles_miles_year(), 
+                                                     light_trucks_miles_year(), bus_miles_year(), heavy_trucks_miles_year(), 
+                                                     wastewater_treatment_factor_input(), total_treated_waterwater_input(), therms_by_business_input(), 
+                                                     therms_by_residents_input(), electricity_by_businesses(), electricity_by_residents(), region(),
+                                                     avg_cats_per_person(), avg_dogs_per_person()))
+  output$plot2 <- renderPlot(stacked_graphs_filtered(input$block_groups_f, cex_data(), general_data(), passenger_cars_miles_year(), motorcycles_miles_year(), 
+                                                     light_trucks_miles_year(), bus_miles_year(), heavy_trucks_miles_year(), wastewater_treatment_factor_input(), 
+                                                     total_treated_waterwater_input(), therms_by_business_input(), therms_by_residents_input(), 
+                                                     electricity_by_businesses(), electricity_by_residents(), region(), avg_cats_per_person(), avg_dogs_per_person()))
   
   # Download excel template for Block Group data inputs
   output$downloadBlockGroupInput <- downloadHandler(
@@ -144,9 +210,12 @@ server <- function(input, output, session){
 }
 
 ## Update calculations functions
-updateAll <- function(cex_data, general_data, passenger_cars_miles_year, motorcycle_miles_year, light_trucks_miles_year, bus_miles_year, heavy_trucks_miles_year, wastewater_removal_factor, total_treated_wastewater, therms_by_business, therms_by_residents, electricity_by_businesses, electricity_by_residents, region){
+updateAll <- function(cex_data, general_data, passenger_cars_miles_year, motorcycle_miles_year, light_trucks_miles_year, bus_miles_year, 
+                      heavy_trucks_miles_year, wastewater_removal_factor, total_treated_wastewater, therms_by_business, therms_by_residents, 
+                      electricity_by_businesses, electricity_by_residents, region, avg_cats_per_person, avg_dogs_per_person){
   population_data <- general_data$Total.Population.of.BG
   total_food_production_totals <- food_calculations(cex_data, general_data)
+  
   beef_production_n <- total_food_production_totals[,1]
   pork_production_n <- total_food_production_totals[,2]
   chicken_production_n <- total_food_production_totals[,3]
@@ -166,7 +235,7 @@ updateAll <- function(cex_data, general_data, passenger_cars_miles_year, motorcy
   sugar_production_n <- total_food_production_totals[,17]
   vegetables_production_n <- total_food_production_totals[,18]
   total_food_production_n <- rowSums(total_food_production_totals)
-  pet_data <- pet_calculations(general_data)
+  pet_data <- pet_calculations(general_data, avg_cats_per_person, avg_dogs_per_person)
   pet_food_n <- pet_data[,1]
   pet_waste_n <- pet_data[,2]
   wastewater_n <- wastewater_calculations(wastewater_removal_factor, total_treated_wastewater, population_data)
@@ -176,8 +245,8 @@ updateAll <- function(cex_data, general_data, passenger_cars_miles_year, motorcy
   
   combined_by_block_group_n <- total_food_production_n  + pet_food_n + pet_waste_n + wastewater_n +
     transportation_n + electricity_n + nat_gas_n
-  all_n <- sum(total_food_production_n) + sum(pet_food_n) + sum(pet_waste_n) + sum(wastewater_n) +
-    sum(transportation_n) + sum(electricity_n) + sum(nat_gas_n)
+  all_n <- sum(total_food_production_n, na.rm=T) + sum(pet_food_n, na.rm=T) + sum(pet_waste_n, na.rm=T) + sum(wastewater_n, na.rm=T) +
+    sum(transportation_n, na.rm=T) + sum(electricity_n, na.rm=T) + sum(nat_gas_n, na.rm=T)
   combined_by_category_n_table <- data.frame("Block Group" <- cex_data$ID,
                                              "Food" <- total_food_production_n,
                                              "Pets" <- pet_food_n + pet_waste_n,
@@ -187,12 +256,15 @@ updateAll <- function(cex_data, general_data, passenger_cars_miles_year, motorcy
                                              "Natural Gas" <- nat_gas_n,
                                              "Total" <- combined_by_block_group_n)
   combined_by_category_n_table["Total" ,] <- colSums(combined_by_category_n_table)
+  #combined_by_block_group_n[,"Total"] <- rowSums(combined_by_category_n_table)
   combined_by_category_n_table <- round(combined_by_category_n_table, 3)
   return(combined_by_category_n_table)
 }
 
 
-summary_graphs_filtered <- function(blockgroups, cex_data, general_data, passenger_cars_miles_year, motorcycle_miles_year, light_trucks_miles_year, bus_miles_year, heavy_trucks_miles_year, wastewater_removal_factor, total_treated_wastewater, therms_by_business, therms_by_residents, electricity_by_businesses, electricity_by_residents, region){
+summary_graphs_filtered <- function(blockgroups, cex_data, general_data, passenger_cars_miles_year, motorcycle_miles_year, light_trucks_miles_year, 
+                                    bus_miles_year, heavy_trucks_miles_year, wastewater_removal_factor, total_treated_wastewater, therms_by_business, 
+                                    therms_by_residents, electricity_by_businesses, electricity_by_residents, region, avg_cats_per_person, avg_dogs_per_person){
   population_data <- general_data$Total.Population.of.BG
   total_food_production_totals <- food_calculations(cex_data, general_data)
   beef_production_n <- total_food_production_totals[,1]
@@ -214,7 +286,7 @@ summary_graphs_filtered <- function(blockgroups, cex_data, general_data, passeng
   sugar_production_n <- total_food_production_totals[,17]
   vegetables_production_n <- total_food_production_totals[,18]
   total_food_production_n <- rowSums(total_food_production_totals)
-  pet_data <- pet_calculations(general_data)
+  pet_data <- pet_calculations(general_data, avg_cats_per_person, avg_dogs_per_person)
   pet_food_n <- pet_data[,1]
   pet_waste_n <- pet_data[,2]
   wastewater_n <- wastewater_calculations(wastewater_removal_factor, total_treated_wastewater, population_data)
@@ -224,16 +296,8 @@ summary_graphs_filtered <- function(blockgroups, cex_data, general_data, passeng
   
   combined_by_block_group_n <- total_food_production_n  + pet_food_n + pet_waste_n + wastewater_n +
     transportation_n + electricity_n + nat_gas_n
-  all_n <- sum(total_food_production_n) + sum(pet_food_n) + sum(pet_waste_n) + sum(wastewater_n) +
-    sum(transportation_n) + sum(electricity_n) + sum(nat_gas_n)
-  
-  print(total_food_production_n)
-  print(pet_food_n)
-  print(pet_waste_n)
-  print(wastewater_n)
-  print(transportation_n)
-  print(electricity_n)
-  print(nat_gas_n)
+  all_n <- sum(total_food_production_n, na.rm=T) + sum(pet_food_n, na.rm=T) + sum(pet_waste_n, na.rm=T) + sum(wastewater_n, na.rm=T) +
+    sum(transportation_n, na.rm=T) + sum(electricity_n, na.rm=T) + sum(nat_gas_n, na.rm=T)
   a_filtered <- ggplot(combined_by_category_filtered(blockgroups, cex_data$ID, total_food_production_n, pet_food_n, pet_waste_n, wastewater_n, transportation_n, electricity_n, nat_gas_n), aes(x="", y=value, fill=group)) + 
     geom_bar(stat="identity", width = 1, color="white") + coord_polar("y", start = 0) + theme_void() +
     scale_fill_viridis(discrete = TRUE, option="C") +
@@ -249,7 +313,9 @@ summary_graphs_filtered <- function(blockgroups, cex_data, general_data, passeng
   return({grid.arrange(a_filtered, b_filtered, ncol=2)})
 }
 
-stacked_graphs_filtered<- function(blockgroups, cex_data, general_data, passenger_cars_miles_year, motorcycle_miles_year, light_trucks_miles_year, bus_miles_year, heavy_trucks_miles_year, wastewater_removal_factor, total_treated_wastewater, therms_by_business, therms_by_residents, electricity_by_businesses, electricity_by_residents, region){
+stacked_graphs_filtered<- function(blockgroups, cex_data, general_data, passenger_cars_miles_year, motorcycle_miles_year, light_trucks_miles_year, 
+                                   bus_miles_year, heavy_trucks_miles_year, wastewater_removal_factor, total_treated_wastewater, therms_by_business, 
+                                   therms_by_residents, electricity_by_businesses, electricity_by_residents, region, avg_cats_per_person, avg_dogs_per_person){
   population_data <- general_data$Total.Population.of.BG
   total_food_production_totals <- food_calculations(cex_data, general_data)
   beef_production_n <- total_food_production_totals[,1]
@@ -271,7 +337,7 @@ stacked_graphs_filtered<- function(blockgroups, cex_data, general_data, passenge
   sugar_production_n <- total_food_production_totals[,17]
   vegetables_production_n <- total_food_production_totals[,18]
   total_food_production_n <- rowSums(total_food_production_totals)
-  pet_data <- pet_calculations(general_data)
+  pet_data <- pet_calculations(general_data, avg_cats_per_person, avg_dogs_per_person)
   pet_food_n <- pet_data[,1]
   pet_waste_n <- pet_data[,2]
   wastewater_n <- wastewater_calculations(wastewater_removal_factor, total_treated_wastewater, population_data)
@@ -281,8 +347,8 @@ stacked_graphs_filtered<- function(blockgroups, cex_data, general_data, passenge
   
   combined_by_block_group_n <- total_food_production_n  + pet_food_n + pet_waste_n + wastewater_n +
     transportation_n + electricity_n + nat_gas_n
-  all_n <- sum(total_food_production_n) + sum(pet_food_n) + sum(pet_waste_n) + sum(wastewater_n) +
-    sum(transportation_n) + sum(electricity_n) + sum(nat_gas_n)
+  all_n <- sum(total_food_production_n, na.rm=T) + sum(pet_food_n, na.rm=T) + sum(pet_waste_n, na.rm=T) + sum(wastewater_n, na.rm=T) +
+    sum(transportation_n, na.rm=T) + sum(electricity_n, na.rm=T) + sum(nat_gas_n, na.rm=T)
   food_by_sources2 <- food_by_sources_filtered(blockgroups, cex_data$ID, beef_production_n, pork_production_n, chicken_production_n, cheese_production_n, eggs_production_n, milk_production_n, fish_production_n, liquids_production_n, grains_production_n, nuts_production_n, fruits_production_n, oils_production_n, beans_production_n, spices_production_n, potatoes_production_n, coffee_tea_production_n, sugar_production_n, vegetables_production_n)
   food_by_sources2$x <- 1
   c_filtered <- ggplot(food_by_sources2, aes(x=x, y=value, fill=group))+geom_col()+
@@ -292,6 +358,19 @@ stacked_graphs_filtered<- function(blockgroups, cex_data, general_data, passenge
   d_filtered <- ggplot(combined_by_category2, aes(x=x, y=value, fill=group))+geom_col()+
     scale_fill_viridis(discrete = TRUE, option="C")
   return({grid.arrange(d_filtered, c_filtered, ncol=2)})
+}
+
+
+input_check <- function(cex_data, general_data){
+  total_food_production_totals <- food_calculations(cex_data, general_data, TRUE)
+  total_food_production_totals["Total" ,] <- colSums(total_food_production_totals)
+  total_food_production_totals[,"Total"] <- rowSums(total_food_production_totals)
+  total_food_production_totals <- round(total_food_production_totals, 3)
+ 
+  return(total_food_production_totals) 
+ # return (total_food_production_totals %>%
+ #           formatStyle(columns = colnames(input_check(cex_data(), general_data()))[2:ncol(input_check(cex_data(), general_data()))], 
+#                        backgroundColor  = styleInterval(c(0, 250), c('red', 'white', 'red'))))
 }
 
 shinyApp(ui=ui, server=server)

@@ -10,17 +10,11 @@ library(gridExtra)
 
 ## Fertilizer data -- add
 
-## Liquids and Fruis are wrong for FAH
-## FAFH IS WRONG
-## SNAP IS WRONG
-
 ## Future Notes
-## draw population from census data so don't have to upload
-## stat facotrs -- waste water (maybe by locality)
+## draw population from census data so don't have to upload?
+## stat factors -- waste water (maybe by locality)
 ## electricity could be associated by region and if enter zipcode(s) that could draw
 ## pat w envi sci r other tool institutional
-
-## wastewater -- need removal factor
 
 ## hosting -- use Amazon S3 or Dropbox -- both remote, arbitrary data storage
 
@@ -71,8 +65,8 @@ kg_to_lb <- misc_constants$Kg_to_lb
 
 
 ## FOOD ###############################################################################################################
-food_calculations <- function(cex_data_input, general_data){
-  cex_data <- cex_data_input
+food_calculations <- function(cex_data, general_data, isForInputCheck = FALSE){
+  #cex_data <- cex_data_input
   #if(is.na(cex_data_input)){
   #  cex_data <- read.csv("charlottesville_footprint.csv", header = TRUE, stringsAsFactors = FALSE, strip.white = TRUE)
   #}
@@ -115,7 +109,7 @@ food_calculations <- function(cex_data_input, general_data){
                             185, 185, 185, 185, 185, 185, 185, 136, 168, 169, 171, 172, 173, 
                             151, 123, 174, 152, 183, 183, 183, 183, 183, 183, 183, 183, 183, 
                             183, 183, 183, 183, 183, 183, 183, 175, 176, 137, 138, 182, 178,
-                            179, 178, 139, 140, 180, 181)
+                            179, 178, 139, 140, 180, 181)  
   
   fah_weights <- matrix(0, nrow=nrow(cex_data), ncol=length(fah_cols))
   for(i in 1:nrow(cex_data)){
@@ -222,7 +216,7 @@ food_calculations <- function(cex_data_input, general_data){
   fafh_sum_of_meals <- c()
   for (i in 1:nrow(cex_data)){
     fafh_num_of_meals <- cex_data[i, fafh_cols] / food_out_cost$Average_Cost_Per_Meal
-    fafh_sum_of_meals <- c(fafh_sum_of_meals, sum(fafh_num_of_meals))
+    fafh_sum_of_meals <- c(fafh_sum_of_meals, sum(fafh_num_of_meals, na.rm=T))
   }
   
   fafh_weight_of_meals <- fafh_sum_of_meals * misc_constants$Weight_per_meal
@@ -287,7 +281,7 @@ food_calculations <- function(cex_data_input, general_data){
   avg_price <- snap_to_weight$`PRICE USED (per lb)`[avg_price_entries]
   
   snap_weight_by_category <- matrix(0, nrow=nrow(cex_data), ncol=length(avg_price_entries))
-  for(i in 1:nrow(cex_data)){
+  for(i in 1:length(avg_price_entries)){
     snap_weight_by_category[i,] <- avg_money_spent_on_snap[i] * snap_percentage_of_total / 
       avg_price[i] / misc_constants$Kg_to_lb
   }
@@ -334,6 +328,77 @@ food_calculations <- function(cex_data_input, general_data){
                             snap_potatoes, snap_coffee_tea, snap_sugar, snap_vegetables)
   
   snap_totals <- rowSums(snap_by_category)
+  
+  ## IF For Input Check #################################################################################################
+  if(isForInputCheck){
+    beef_kg <- fah_beef_n + fafh_beef_n + snap_beef
+    pork_kg <- fah_pork_n + fafh_pork_n + snap_pork
+    chicken_kg <- fah_chicken_n + fafh_chicken_n + snap_chicken
+    cheese_kg <- fah_cheese_n + fafh_cheese_n + snap_cheese
+    eggs_kg <- fah_eggs_n + fafh_eggs_n + snap_eggs
+    milk_kg <- fah_milk_n + fafh_milk_n + snap_milk
+    fish_kg <- fah_fish_n + fafh_fish_n + snap_fish
+    liquids_kg <- fah_liquids_n + fafh_liquids_n + snap_liquids
+    grains_kg <- fah_grains_n + fafh_grains_n + snap_grains
+    nuts_kg <- fah_nuts_n + fafh_nuts_n + snap_nuts
+    fruits_kg <- fah_fruits_n + fafh_fruits_n + snap_fruits
+    oils_kg <- fah_oils_n + fafh_oils_n + snap_oils
+    beans_kg <- fah_beans_n + fafh_beans_n + snap_beans
+    spices_kg <- fah_spices_n + fafh_spices_n + snap_spices
+    potatoes_kg <- fah_potatoes_n + fafh_potatoes_n + snap_potatoes
+    coffee_kg <- fah_coffee_tea_n + fafh_coffee_tea_n + snap_coffee_tea
+    sugar_kg <- fah_sugar_n + fafh_sugar_n + snap_sugar
+    vegetable_kg <- fah_vegetables_n + fafh_vegetables_n + snap_vegetables
+    fah_kg <- fah_beef_n + fah_pork_n + fah_chicken_n + fah_cheese_n + fah_milk_n +
+      fah_fish_n + fah_liquids_n + fah_grains_n + fah_liquids_n + fah_fruits_n + fah_nuts_n +
+      fah_oils_n + fah_beans_n + fah_spices_n + fah_potatoes_n + fah_coffee_tea_n +
+      fah_sugar_n + fah_vegetables_n
+    fafh_kg <- fafh_beef_n + fafh_pork_n + fafh_chicken_n + fafh_cheese_n + fafh_milk_n + 
+      fafh_fish_n + fafh_liquids_n + fafh_grains_n + fafh_liquids_n + fafh_fruits_n + fafh_nuts_n +
+      fafh_oils_n + fafh_beans_n + fafh_spices_n + fafh_potatoes_n + fafh_coffee_tea_n +
+      fafh_sugar_n + fafh_vegetables_n
+    snap_kg <- snap_beef + snap_pork + snap_chicken + snap_cheese + snap_milk +
+      snap_fish + snap_liquids + snap_grains + snap_liquids + snap_fruits + snap_nuts + 
+      snap_sugar + snap_vegetables
+    #food_by_sources <- data.frame( group = c("Beef", "Pork", "Chicken", "Cheese", "Eggs",
+    #                                         "Milk", "Fish", "Liquids", "Grains", "Nuts",
+    #                                         "Fruits", "Oils", "Beans", "Spices", "Potatoes",
+    #                                         "Coffee and Tea", "Sugar", "Vegetables",
+    #                                         "Food At Home", "Food Away From Home", "SNAP Food Data"),
+    #                               value = c(beef_kg, pork_kg, chicken_kg,
+    #                                         cheese_kg, eggs_kg, milk_kg,
+    #                                         fish_kg, liquids_kg, grains_kg,
+    #                                         nuts_kg, fruits_kg, oils_kg,
+    #                                         beans_kg, spices_kg, potatoes_kg,
+    #                                         coffee_kg, sugar_kg, vegetable_kg,
+    #                                         fah_kg, fafh_kg, snap_kg))
+    food_by_sources <- data.frame("Block Group" <- cex_data$ID,
+                                  "Beef" <- beef_kg,
+                                  "Pork" <- pork_kg,
+                                  "Chicken" <- chicken_kg,
+                                  "Cheese" <- cheese_kg,
+                                  "Eggs" <- eggs_kg,
+                                  "Milk" <- milk_kg,
+                                  "Fish" <- fish_kg,
+                                  "Liquids" <- liquids_kg,
+                                  "Grains" <- grains_kg,
+                                  "Nuts" <- nuts_kg,
+                                  "Fruits" <- fruits_kg,
+                                  "Oils" <- oils_kg,
+                                  "Beans" <- beans_kg,
+                                  "Spices" <- spices_kg,
+                                  "Potatoes" <- potatoes_kg,
+                                  "Coffee and Tea" <- coffee_kg,
+                                  "Sugar" <- sugar_kg,
+                                  "Vegetables" <- vegetable_kg,
+                                  "Food At Home" <- fah_kg,
+                                  "Food Away From Home" <- fafh_kg,
+                                  "SNAP Food" <- snap_kg
+      
+    )
+    return (food_by_sources)
+    }
+  
   
   ## FOOD PRODUCTION ####################################################################################################
   
@@ -452,12 +517,12 @@ food_calculations <- function(cex_data_input, general_data){
                                            "Milk", "Fish", "Liquids", "Grains", "Nuts",
                                            "Fruits", "Oils", "Beans", "Spices", "Potatoes",
                                            "Coffee and Tea", "Sugar", "Vegetables"),
-                                 value = c(sum(beef_production_n), sum(pork_production_n), sum(chicken_production_n),
-                                           sum(cheese_production_n), sum(eggs_production_n), sum(milk_production_n),
-                                           sum(fish_production_n), sum(liquids_production_n), sum(grains_production_n),
-                                           sum(nuts_production_n), sum(fruits_production_n), sum(oils_production_n),
-                                           sum(beans_production_n), sum(spices_production_n), sum(potatoes_production_n),
-                                           sum(coffee_tea_production_n), sum(sugar_production_n), sum(vegetables_production_n)))
+                                 value = c(sum(beef_production_n, na.rm=T), sum(pork_production_n, na.rm=T), sum(chicken_production_n, na.rm=T),
+                                           sum(cheese_production_n, na.rm=T), sum(eggs_production_n, na.rm=T), sum(milk_production_n, na.rm=T),
+                                           sum(fish_production_n, na.rm=T), sum(liquids_production_n, na.rm=T), sum(grains_production_n, na.rm=T),
+                                           sum(nuts_production_n, na.rm=T), sum(fruits_production_n, na.rm=T), sum(oils_production_n, na.rm=T),
+                                           sum(beans_production_n, na.rm=T), sum(spices_production_n, na.rm=T), sum(potatoes_production_n, na.rm=T),
+                                           sum(coffee_tea_production_n, na.rm=T), sum(sugar_production_n, na.rm=T), sum(vegetables_production_n, na.rm=T)))
   return(total_food_production_totals)
 }
 # total_food_production_totals <- food_calculations(cex_data)
@@ -481,9 +546,21 @@ food_calculations <- function(cex_data_input, general_data){
 # vegetables_production_n <- total_food_production_totals[,18]
 
 ## PETS ###############################################################################################################
-pet_calculations <- function(general_data){
-  avg_cats_person <- as.numeric(pet_constants[1, "Cats"]) ## average number of cats per person
-  avg_dogs_person <- as.numeric(pet_constants[1, "Dogs"]) ## average number of dogs per person
+pet_calculations <- function(general_data, avg_cats_per_person, avg_dogs_per_person, isForInputCheck = FALSE){
+  avg_cats_person <- avg_cats_per_person
+  avg_dogs_person <- avg_dogs_per_person
+  
+  if(isForInputCheck){
+    pet_df <- data.frame(
+      "Block Group" <- general_data[,1],
+      "Population" <- general_data$Total.Population.of.BG,
+     # "Number of Businesses" <- general_data$Number.of.Businesses.in.BG,
+      "Number of Cats" <- avg_cats_person * general_data$Total.Population.of.BG,
+      "Number of Dogs" <- avg_dogs_person * general_data$Total.Population.of.BG
+    )
+      return (pet_df)
+  }
+  
   avg_cat_food_year <- as.numeric(pet_constants[2, "Cats"] * 365) ## average food per cat per year (kg)
   avg_dog_food_year <- as.numeric(pet_constants[2, "Dogs"] * 365) ## average food per dog per year (kg)
   
@@ -557,9 +634,9 @@ transportation_calculations <- function(cex_data, motorcycles_miles_year_input, 
   spent_on_diesel <- cex_data$X6012_X
   spent_on_fares <- cex_data$X6061_X
 
-  total_spent_on_gas <- sum(spent_on_gas)
-  total_spent_on_diesel <- sum(spent_on_diesel)
-  total_spent_on_fares <- sum(spent_on_fares)
+  total_spent_on_gas <- sum(spent_on_gas, na.rm=T)
+  total_spent_on_diesel <- sum(spent_on_diesel, na.rm=T)
+  total_spent_on_fares <- sum(spent_on_fares, na.rm=T)
 
   motorcycles_spent_on_gas <- total_spent_on_gas / motorcycles_miles_year_input
   motorcycles_spent_on_diesel <- total_spent_on_diesel / motorcycles_miles_year_input
@@ -631,9 +708,9 @@ electricity_calculations <- function(cex_data, general_data, electricity_by_resi
   NOx_To_N <- electricity_natGas_constants$Electricty[3]
   N2O_To_N <- electricity_natGas_constants$Electricty[4]
   
-  avg_electricity_rate <- sum(dollars_spent_electricity)/electricity_by_residents_input
+  avg_electricity_rate <- sum(dollars_spent_electricity, na.rm=T)/electricity_by_residents_input
   kwh_by_residents <- dollars_spent_electricity/avg_electricity_rate
-  kwh_by_businesses <- electricity_by_businesses_input * (num_of_businesses / sum(num_of_businesses))
+  kwh_by_businesses <- electricity_by_businesses_input * (num_of_businesses / sum(num_of_businesses, na.rm=T))
  
   total_kwh_used <- (kwh_by_residents + kwh_by_businesses)
   electricity_n <- total_kwh_used * NOx_EF * NOx_To_N + total_kwh_used * N2O_EF * N2O_To_N
@@ -648,12 +725,13 @@ nat_gas_calculations <- function(cex_data_input, general_data, total_therms_by_r
   #}
   
   spend_on_nat_gas <- cex_data_input$X3059_X
-  avg_rate_for_residents <- sum(spend_on_nat_gas) / total_therms_by_residents
+  avg_rate_for_residents <- sum(spend_on_nat_gas, na.rm=T) / total_therms_by_residents
   therms_by_residents <- spend_on_nat_gas / avg_rate_for_residents 
 
   ## Find the therms for businesses in the census block
 #  num_of_business <- general_data[,"Number.of.Businesses.in.BG"]
-  therms_by_business <- total_therms_by_business /(sum(general_data[,"Number.of.Businesses.in.BG"])) * general_data[,"Number.of.Businesses.in.BG"]/(sum(general_data[,"Number.of.Businesses.in.BG"]))
+  therms_by_business <- total_therms_by_business /(sum(general_data[,"Number.of.Businesses.in.BG"], na.rm=T)) * 
+    general_data[,"Number.of.Businesses.in.BG"]/(sum(general_data[,"Number.of.Businesses.in.BG"], na.rm=T))
 
   ## Combine residential and business natural gas use and multiply by constants regarding NO and N2O in   natural gas
   therms_per_block <- therms_by_residents + therms_by_business
@@ -721,21 +799,24 @@ wastewater_calculations <- function(wastewater_removal_factor, total_treated_was
 #             sum(wastewater_n) / all_n)
 
 combined_by_category_filtered <- function(block_groups, blockgroups, total_food_production_n, pet_food_n, pet_waste_n, wastewater_n, transportation_n, electricity_n, nat_gas_n){
-  all_n_filtered <- sum(total_food_production_n[block_groups %in% blockgroups]) + 
-    sum(pet_food_n[block_groups %in% blockgroups]) + 
-    sum(pet_waste_n[block_groups %in% blockgroups]) + 
-    sum(wastewater_n[block_groups %in% blockgroups]) +
-    sum(transportation_n[block_groups %in% blockgroups]) + 
-    sum(electricity_n[block_groups %in% blockgroups]) + 
-    sum(nat_gas_n[block_groups %in% blockgroups])
+  block_groups <- as.numeric(block_groups)
+  blockgroups <- as.numeric(block_groups)
+  all_n_filtered <- sum(total_food_production_n[block_groups %in% blockgroups], na.rm=T) + 
+    sum(pet_food_n[block_groups %in% blockgroups], na.rm=T) + 
+    sum(pet_waste_n[block_groups %in% blockgroups], na.rm=T) + 
+    sum(wastewater_n[block_groups %in% blockgroups], na.rm=T) +
+    sum(transportation_n[block_groups %in% blockgroups], na.rm=T) + 
+    sum(electricity_n[block_groups %in% blockgroups], na.rm=T) + 
+    sum(nat_gas_n[block_groups %in% blockgroups], na.rm=T)
   return(data.frame(
   group = c("Electricity", "Food",  "Natural Gas", "Pets", "Transportation", "Wastewater"),
-  value = c(sum(electricity_n[block_groups %in% blockgroups]) / all_n_filtered,
-            sum(total_food_production_n[block_groups %in% blockgroups]) / all_n_filtered, 
-            sum(nat_gas_n[block_groups %in% blockgroups]) / all_n_filtered,
-            (sum(pet_food_n[block_groups %in% blockgroups]) + sum(pet_waste_n[block_groups %in% blockgroups])) / all_n_filtered, 
-            sum(transportation_n[block_groups %in% blockgroups]) / all_n_filtered,
-            sum(wastewater_n[block_groups %in% blockgroups]) / all_n_filtered)))
+  value = c(sum(electricity_n[block_groups %in% blockgroups], na.rm=T) / all_n_filtered,
+            sum(total_food_production_n[block_groups %in% blockgroups], na.rm=T) / all_n_filtered, 
+            sum(nat_gas_n[block_groups %in% blockgroups], na.rm=T) / all_n_filtered,
+            (sum(pet_food_n[block_groups %in% blockgroups], na.rm=T) + 
+               sum(pet_waste_n[block_groups %in% blockgroups], na.rm=T)) / all_n_filtered, 
+            sum(transportation_n[block_groups %in% blockgroups], na.rm=T) / all_n_filtered,
+            sum(wastewater_n[block_groups %in% blockgroups], na.rm=T) / all_n_filtered)))
 }
 
 food_by_sources_filtered <- function(block_groups, blockgroups, beef_production_n, pork_production_n, chicken_production_n, cheese_production_n, eggs_production_n, milk_production_n, fish_production_n, liquids_production_n, grains_production_n, nuts_production_n, fruits_production_n, oils_production_n, beans_production_n, spices_production_n, potatoes_production_n, coffee_tea_production_n, sugar_production_n, vegetables_production_n){
@@ -743,24 +824,24 @@ food_by_sources_filtered <- function(block_groups, blockgroups, beef_production_
                                          "Milk", "Fish", "Liquids", "Grains", "Nuts",
                                          "Fruits", "Oils", "Beans", "Spices", "Potatoes",
                                          "Coffee and Tea", "Sugar", "Vegetables"),
-              value = c(sum(beef_production_n[block_groups %in% blockgroups]), 
-                        sum(pork_production_n[block_groups %in% blockgroups]), 
-                        sum(chicken_production_n[block_groups %in% blockgroups]),
-                        sum(cheese_production_n[block_groups %in% blockgroups]),
-                        sum(eggs_production_n[block_groups %in% blockgroups]),
-                        sum(milk_production_n[block_groups %in% blockgroups]),
-                        sum(fish_production_n[block_groups %in% blockgroups]),
-                        sum(liquids_production_n[block_groups %in% blockgroups]),
-                        sum(grains_production_n[block_groups %in% blockgroups]),
-                        sum(nuts_production_n[block_groups %in% blockgroups]),
-                        sum(fruits_production_n[block_groups %in% blockgroups]), 
-                        sum(oils_production_n[block_groups %in% blockgroups]),
-                        sum(beans_production_n[block_groups %in% blockgroups]),
-                        sum(spices_production_n[block_groups %in% blockgroups]),
-                        sum(potatoes_production_n[block_groups %in% blockgroups]),
-                        sum(coffee_tea_production_n[block_groups %in% blockgroups]),
-                        sum(sugar_production_n[block_groups %in% blockgroups]), 
-                        sum(vegetables_production_n[block_groups %in% blockgroups]))))
+              value = c(sum(beef_production_n[block_groups %in% blockgroups], na.rm=T), 
+                        sum(pork_production_n[block_groups %in% blockgroups], na.rm=T), 
+                        sum(chicken_production_n[block_groups %in% blockgroups], na.rm=T),
+                        sum(cheese_production_n[block_groups %in% blockgroups], na.rm=T),
+                        sum(eggs_production_n[block_groups %in% blockgroups], na.rm=T),
+                        sum(milk_production_n[block_groups %in% blockgroups], na.rm=T),
+                        sum(fish_production_n[block_groups %in% blockgroups], na.rm=T),
+                        sum(liquids_production_n[block_groups %in% blockgroups], na.rm=T),
+                        sum(grains_production_n[block_groups %in% blockgroups], na.rm=T),
+                        sum(nuts_production_n[block_groups %in% blockgroups], na.rm=T),
+                        sum(fruits_production_n[block_groups %in% blockgroups], na.rm=T), 
+                        sum(oils_production_n[block_groups %in% blockgroups], na.rm=T),
+                        sum(beans_production_n[block_groups %in% blockgroups], na.rm=T),
+                        sum(spices_production_n[block_groups %in% blockgroups], na.rm=T),
+                        sum(potatoes_production_n[block_groups %in% blockgroups], na.rm=T),
+                        sum(coffee_tea_production_n[block_groups %in% blockgroups], na.rm=T),
+                        sum(sugar_production_n[block_groups %in% blockgroups], na.rm=T), 
+                        sum(vegetables_production_n[block_groups %in% blockgroups], na.rm=T))))
 }
 
 ######################################################################### Graphs  ######################################

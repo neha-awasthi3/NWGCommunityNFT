@@ -1,0 +1,39 @@
+Baltimore Data:
+
+Region
+RFC East
+
+Wastewater
+31297700000
+
+removal factor
+0.88
+
+electricity
+residents
+1754070517
+
+businesses
+4695402288
+
+nat gas
+residents
+116215113
+
+businesses
+221511147
+
+motorcycles
+11509600
+
+cars
+2814970600
+
+light truck
+467727200
+
+buses
+25460800
+
+other trucks
+234332200
