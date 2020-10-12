@@ -67,8 +67,7 @@ kg_to_lb <- misc_constants$Kg_to_lb
 ## FOOD ###############################################################################################################
 food_calculations <- function(cex_data, general_data, isForInputCheck = FALSE, 
                               beef_percentage_change = 100, beans_replace_beef = FALSE){
-
-  ## FAH  ###############################################################################################################
+   ## FAH  ###############################################################################################################
   fah_col_lookup <- c("X1005_X", "X1006_X", "X1007_X", "X1008_X", "X1009_X", "X1011_X", 
                       "X1012_X", "X1014_X", "X1015_X", "X1016_X", "X1018_X", "X1019_X",
                       "X1020_X", "X1021_X", "X1022_X", "X1025_X", "X1026_X", "X1027_X",
@@ -142,6 +141,8 @@ food_calculations <- function(cex_data, general_data, isForInputCheck = FALSE,
     fah_weights[,87] * (1 - meal_percentages$`Percent of Total Food Weight`[12]) -
     fah_weights[,103] * (1 - meal_percentages$`Percent of Total Food Weight`[12]) -
     fah_weights[,129] * (1 - meal_percentages$`Percent of Total Food Weight`[12])
+  print(fah_beef_n)
+  print("*********************")
   fah_pork_n <- rowSums(fah_weights[, pork_col]) - fah_weights[,31] * (2/3) - fah_weights[,36] * (2/3) -
     fah_weights[,87] * (1 - meal_percentages$`Percent of Total Food Weight`[11]) -
     fah_weights[,103] * (1 - meal_percentages$`Percent of Total Food Weight`[11]) -
@@ -199,10 +200,13 @@ food_calculations <- function(cex_data, general_data, isForInputCheck = FALSE,
     fah_weights[,103] * (1 - meal_percentages$`Percent of Total Food Weight`[7]) -
     fah_weights[,129] * (1 - meal_percentages$`Percent of Total Food Weight`[7]) 
   
+  
   ## IF PROJECTIONS, ADJUST BEEF AND BEANS APPROPRIATELY
   beef_multiplier <- beef_percentage_change / 100
   diff <- fah_beef_n - fah_beef_n * beef_multiplier
   fah_beef_n <- fah_beef_n - diff
+  print("after diff")
+  print(fah_beef_n)
   if(beans_replace_beef){
     fah_beans_n <- fah_beans_n + diff
   }
@@ -212,7 +216,6 @@ food_calculations <- function(cex_data, general_data, isForInputCheck = FALSE,
                           fah_milk_n, fah_fish_n, fah_liquids_n, fah_grains_n, fah_fruits_n,
                           fah_nuts_n, fah_oils_n, fah_beans_n, fah_spices_n, fah_potatoes_n,
                           fah_coffee_tea_n, fah_sugar_n, fah_vegetables_n)
-  
   fah_n <- rowSums(fah_category_n)
   ## liquids is diff, and fruit
   ## FAFH ###############################################################################################################
@@ -253,7 +256,7 @@ food_calculations <- function(cex_data, general_data, isForInputCheck = FALSE,
   ## IF PROJECTIONS, ADJUST BEEF AND BEANS APPROPRIATELY
   # beef_multiplier <- beef_percentage_change / 100 # from fah section
   diff_fafh <- fafh_beef_n - fafh_beef_n * beef_multiplier
-  fah_beef_n <- fafh_beef_n - diff_fafh
+  fafh_beef_n <- fafh_beef_n - diff_fafh
   if(beans_replace_beef){
     fafh_beans_n <- fafh_beans_n + diff_fafh
   }
@@ -527,8 +530,6 @@ food_calculations <- function(cex_data, general_data, isForInputCheck = FALSE,
                                         nuts_production_n, fruits_production_n, oils_production_n,
                                         beans_production_n, spices_production_n, potatoes_production_n,
                                         coffee_tea_production_n, sugar_production_n, vegetables_production_n)
-   print("total food")
-  print(total_food_production_totals)
   total_food_production_n <- rowSums(total_food_production_totals)
   fah_food <- cbind(fah_beef_n, fah_pork_n, fah_chicken_n, fah_cheese_n, fah_eggs_n, fah_milk_n,
                     fah_fish_n, fah_liquids_n, fah_grains_n, fah_nuts_n, fah_fruits_n, 
@@ -542,8 +543,15 @@ food_calculations <- function(cex_data, general_data, isForInputCheck = FALSE,
                      snap_fish, snap_liquids, snap_grains, snap_nuts, snap_fruits, snap_oils,
                      snap_beans, snap_spices, snap_potatoes, snap_coffee_tea, snap_sugar,
                      snap_vegetables)
-  print("snap")
-  print(snap_food)
+ 
+  # print("snap")
+  #print(snap_food)
+  #print("snap sum")
+  #print(rowSums(snap_food))
+  print("fah")
+  print(rowSums(fah_food))
+  print((fah_food[1,]))
+  print("________________________")
   food_by_sources <- data.frame( group = c("Beef", "Pork", "Chicken", "Cheese", "Eggs",
                                            "Milk", "Fish", "Liquids", "Grains", "Nuts",
                                            "Fruits", "Oils", "Beans", "Spices", "Potatoes",
