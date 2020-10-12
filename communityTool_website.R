@@ -81,7 +81,22 @@ ui <- fluidPage(
         ),
         
         tabPanel("Map"), 
-        tabPanel("Reduction Strategies"),
+        tabPanel("Projections",
+                 h3("Use the slider bars to adjust certain categories. ",
+                      "Magnitude on the sliders represent percentage of the ",
+                      "original category is used."),
+                 fluidRow(
+                    column(4, 
+                    sliderInput("beef_consumption", h5("Beef Consumption"), 
+                             min=75, max=125, step=5, value=100),
+                    checkboxInput("beef_beans_replacement", h5("Replace Beef Consumption with Bean Consumption"))),
+                    column(4, sliderInput("bean_consumption", h5("Bean Consumption"), 
+                             min=75, max=125, step=5, value=100)),
+                    column(4, sliderInput("car_motorcycle_use", h5("Car and Motorscycle Transportation"), 
+                             min=75, max=125, step=5, value=100))
+                    ),
+                 fluidRow(dataTableOutput('projectionsTable'))
+                 ),
         tabPanel("Check Input",
                  fluidRow(radioButtons("totalOrPerCapita", label="Doesn't do anything yet", choices = c("Total", "Per Capita"),
                                        selected="Total")),
@@ -113,6 +128,11 @@ server <- function(input, output, session){
   
   avg_cats_per_person <- reactive({input$avg_cats_per_person})
   avg_dogs_per_person <- reactive({input$avg_dogs_per_person})
+  
+  # For projections
+  beef_consumption_input <- reactive({input$beef_consumption})
+  beef_beans_replacement_input <- reactive({input$beef_beans_replacement})
+  car_motorcycle_use_input <- reactive(input$car_motorcycle_use)
   
   cex_data <- eventReactive(input$cex_data, {
     read.csv(input$cex_data$datapath)
@@ -192,6 +212,26 @@ server <- function(input, output, session){
   )))
     
     
+  output$projectionsTable <- renderDataTable({
+    updateAll(cex_data(), general_data(), passenger_cars_miles_year(), motorcycles_miles_year(), light_trucks_miles_year(), bus_miles_year(), 
+              heavy_trucks_miles_year(), wastewater_treatment_factor_input(), total_treated_waterwater_input(), therms_by_business_input(), 
+              therms_by_residents_input(), electricity_by_businesses(), electricity_by_residents(), region(), avg_cats_per_person(), 
+              avg_dogs_per_person(), beef_consumption_input(), beef_beans_replacement_input())},
+    options = list(dom  = '<"top">lrt<"bottom">ip',
+                   columns = list (
+                     list(title = "Block Group"),
+                     list(title = "Food"),
+                     list(title = "Pets"),
+                     list(title = "Wastewater"),
+                     list(title = "Transportation"),
+                     list(title = "Electricity"),
+                     list(title = "Natural Gas"),
+                     list(title = "Total")
+                   )))
+  
+  
+  
+  
   output$plot1 <- renderPlot(summary_graphs_filtered(input$block_groups_f, cex_data(), general_data(), passenger_cars_miles_year(), motorcycles_miles_year(), 
                                                      light_trucks_miles_year(), bus_miles_year(), heavy_trucks_miles_year(), 
                                                      wastewater_treatment_factor_input(), total_treated_waterwater_input(), therms_by_business_input(), 
@@ -212,9 +252,10 @@ server <- function(input, output, session){
 ## Update calculations functions
 updateAll <- function(cex_data, general_data, passenger_cars_miles_year, motorcycle_miles_year, light_trucks_miles_year, bus_miles_year, 
                       heavy_trucks_miles_year, wastewater_removal_factor, total_treated_wastewater, therms_by_business, therms_by_residents, 
-                      electricity_by_businesses, electricity_by_residents, region, avg_cats_per_person, avg_dogs_per_person){
+                      electricity_by_businesses, electricity_by_residents, region, avg_cats_per_person, avg_dogs_per_person,
+                      beef_consumption_change=100, beans_replace_beef=FALSE){
   population_data <- general_data$Total.Population.of.BG
-  total_food_production_totals <- food_calculations(cex_data, general_data)
+  total_food_production_totals <- food_calculations(cex_data, general_data, FALSE, beef_consumption_change, beans_replace_beef)
   
   beef_production_n <- total_food_production_totals[,1]
   pork_production_n <- total_food_production_totals[,2]
@@ -235,6 +276,7 @@ updateAll <- function(cex_data, general_data, passenger_cars_miles_year, motorcy
   sugar_production_n <- total_food_production_totals[,17]
   vegetables_production_n <- total_food_production_totals[,18]
   total_food_production_n <- rowSums(total_food_production_totals)
+  
   pet_data <- pet_calculations(general_data, avg_cats_per_person, avg_dogs_per_person)
   pet_food_n <- pet_data[,1]
   pet_waste_n <- pet_data[,2]
@@ -247,15 +289,19 @@ updateAll <- function(cex_data, general_data, passenger_cars_miles_year, motorcy
     transportation_n + electricity_n + nat_gas_n
   all_n <- sum(total_food_production_n, na.rm=T) + sum(pet_food_n, na.rm=T) + sum(pet_waste_n, na.rm=T) + sum(wastewater_n, na.rm=T) +
     sum(transportation_n, na.rm=T) + sum(electricity_n, na.rm=T) + sum(nat_gas_n, na.rm=T)
-  combined_by_category_n_table <- data.frame("Block Group" <- cex_data$ID,
-                                             "Food" <- total_food_production_n,
-                                             "Pets" <- pet_food_n + pet_waste_n,
-                                             "Wastewater" <- wastewater_n,
-                                             "Transportation" <- transportation_n,
-                                             "Electricity" <- electricity_n,
-                                             "Natural Gas" <- nat_gas_n,
-                                             "Total" <- combined_by_block_group_n)
-  combined_by_category_n_table["Total" ,] <- colSums(combined_by_category_n_table)
+  combined_by_category_n_table<-cbind(cex_data$ID, total_food_production_n, pet_food_n + pet_waste_n,
+                                      wastewater_n, transportation_n, electricity_n, nat_gas_n, combined_by_block_group_n)
+  # This started giving an index column and pushing over the
+  # data by one while keeping the column name, so changed to cbind
+  #combined_by_category_n_table <- data.frame("Block Group" <- cex_data$ID,
+  #                                            "Food" <- total_food_production_n,
+  #                                           "Pets" <- pet_food_n + pet_waste_n,
+  #                                           "Wastewater" <- wastewater_n,
+  #                                           "Transportation" <- transportation_n,
+  #                                           "Electricity" <- electricity_n,
+  #                                           "Natural Gas" <- nat_gas_n,
+  #                                           "Total" <- combined_by_block_group_n)
+  #combined_by_category_n_table["Total" ,] <- colSums(combined_by_category_n_table)
   #combined_by_block_group_n[,"Total"] <- rowSums(combined_by_category_n_table)
   combined_by_category_n_table <- round(combined_by_category_n_table, 3)
   return(combined_by_category_n_table)
