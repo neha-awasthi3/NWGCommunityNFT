@@ -65,11 +65,9 @@ kg_to_lb <- misc_constants$Kg_to_lb
 
 
 ## FOOD ###############################################################################################################
-food_calculations <- function(cex_data, general_data, isForInputCheck = FALSE){
-  #cex_data <- cex_data_input
-  #if(is.na(cex_data_input)){
-  #  cex_data <- read.csv("charlottesville_footprint.csv", header = TRUE, stringsAsFactors = FALSE, strip.white = TRUE)
-  #}
+food_calculations <- function(cex_data, general_data, isForInputCheck = FALSE, 
+                              beef_percentage_change = 100, beans_replace_beef = FALSE){
+
   ## FAH  ###############################################################################################################
   fah_col_lookup <- c("X1005_X", "X1006_X", "X1007_X", "X1008_X", "X1009_X", "X1011_X", 
                       "X1012_X", "X1014_X", "X1015_X", "X1016_X", "X1018_X", "X1019_X",
@@ -200,6 +198,16 @@ food_calculations <- function(cex_data, general_data, isForInputCheck = FALSE){
     fah_weights[,87] * (1 - meal_percentages$`Percent of Total Food Weight`[7]) -
     fah_weights[,103] * (1 - meal_percentages$`Percent of Total Food Weight`[7]) -
     fah_weights[,129] * (1 - meal_percentages$`Percent of Total Food Weight`[7]) 
+  
+  ## IF PROJECTIONS, ADJUST BEEF AND BEANS APPROPRIATELY
+  beef_multiplier <- beef_percentage_change / 100
+  diff <- fah_beef_n - fah_beef_n * beef_multiplier
+  fah_beef_n <- fah_beef_n - diff
+  if(beans_replace_beef){
+    fah_beans_n <- fah_beans_n + diff
+  }
+  
+  ## COMBINE FAH
   fah_category_n <- cbind(fah_beef_n, fah_pork_n, fah_chicken_n, fah_cheese_n, fah_eggs_n, 
                           fah_milk_n, fah_fish_n, fah_liquids_n, fah_grains_n, fah_fruits_n,
                           fah_nuts_n, fah_oils_n, fah_beans_n, fah_spices_n, fah_potatoes_n,
@@ -221,6 +229,7 @@ food_calculations <- function(cex_data, general_data, isForInputCheck = FALSE){
   
   fafh_weight_of_meals <- fafh_sum_of_meals * misc_constants$Weight_per_meal
   
+  
   fafh_beef_n <- fafh_weight_of_meals * meal_percentages$`Percent of Total Food Weight`[12]
   fafh_pork_n <- fafh_weight_of_meals * meal_percentages$`Percent of Total Food Weight`[11]
   fafh_chicken_n <- fafh_weight_of_meals * meal_percentages$`Percent of Total Food Weight`[10]
@@ -241,12 +250,20 @@ food_calculations <- function(cex_data, general_data, isForInputCheck = FALSE){
   fafh_sugar_n <- 0
   fafh_vegetables_n <- fafh_weight_of_meals * meal_percentages$`Percent of Total Food Weight`[7]
   
-  fafh_meal_percent_rows <- c(12, 11, 10, 14, 15, 13, 16, 9, 2, 3, 4, 8, 5, 6, 1, 7)
-  fafh_per_category_n <- matrix(0, nrow=nrow(cex_data), ncol=length(fafh_meal_percent_rows))
-  for(i in 1:nrow(cex_data)){
-    fafh_per_category_n[i,] <- fafh_weight_of_meals[i] * meal_percentages$`Percent of Total Food Weight`[fafh_meal_percent_rows]
+  ## IF PROJECTIONS, ADJUST BEEF AND BEANS APPROPRIATELY
+  # beef_multiplier <- beef_percentage_change / 100 # from fah section
+  diff_fafh <- fafh_beef_n - fafh_beef_n * beef_multiplier
+  fah_beef_n <- fafh_beef_n - diff_fafh
+  if(beans_replace_beef){
+    fafh_beans_n <- fafh_beans_n + diff_fafh
   }
-  fafh_n <- rowSums(fafh_per_category_n)
+  
+  #fafh_meal_percent_rows <- c(12, 11, 10, 14, 15, 13, 16, 9, 2, 3, 4, 8, 5, 6, 1, 7)
+  #fafh_per_category_n <- matrix(0, nrow=nrow(cex_data), ncol=length(fafh_meal_percent_rows))
+  #for(i in 1:nrow(cex_data)){
+  #  fafh_per_category_n[i,] <- fafh_weight_of_meals[i] * meal_percentages$`Percent of Total Food Weight`[fafh_meal_percent_rows]
+  #}
+  #fafh_n <- rowSums(fafh_per_category_n)
   
   ## SNAP ###############################################################################################################
   # Charlottesville's
@@ -279,12 +296,17 @@ food_calculations <- function(cex_data, general_data, isForInputCheck = FALSE){
                          59, 59, 59, 59, 59, 59, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 73,
                          74, 75, 77, 78, 79, 80, 81)
   avg_price <- snap_to_weight$`PRICE USED (per lb)`[avg_price_entries]
-  
+  #snap_weight_by_category <- matrix(0, nrow=nrow(cex_data), ncol=length(avg_price))
+  #for(i in 1:length(avg_price)){
+  #  snap_weight_by_category[,i] <- avg_money_spent_on_snap * snap_percentage_of_total[i] / 
+  #    avg_price[i] / misc_constants$Kg_to_lb
+  #}
   snap_weight_by_category <- matrix(0, nrow=nrow(cex_data), ncol=length(avg_price_entries))
-  for(i in 1:length(avg_price_entries)){
-    snap_weight_by_category[i,] <- avg_money_spent_on_snap[i] * snap_percentage_of_total / 
-      avg_price[i] / misc_constants$Kg_to_lb
+  for(i in 1:ncol(snap_weight_by_category)){ 
+    snap_weight_by_category[,i] <- (avg_money_spent_on_snap * snap_percentage_of_total[i] /
+      avg_price[i] / misc_constants$Kg_to_lb)
   }
+  
   snap_beef_col <- c(1, 17, 38)
   snap_pork_col <- c(2, 16, 37)
   snap_chicken_col <- c(3, 15, 36)
@@ -323,10 +345,17 @@ food_calculations <- function(cex_data, general_data, isForInputCheck = FALSE){
   snap_coffee_tea <- rowSums(snap_weight_by_category[, snap_coffee_tea_col])
   snap_sugar <- rowSums(snap_weight_by_category[, snap_sugar_col])
   snap_vegetables <- rowSums(snap_weight_by_category[, snap_vegetables_col])
+  
+  ## IF PROJECTIONS, ADJUST BEEF AND BEANS APPROPRIATELY
+  # beef_multiplier <- beef_percentage_change / 100 # from fah section
+  diff_snap <- snap_beef - snap_beef * beef_multiplier
+  snap_beef <- snap_beef - diff_snap
+  if(beans_replace_beef){
+    snap_beans <- snap_beans + diff_snap
+  }
   snap_by_category <- cbind(snap_beef, snap_pork, snap_chicken, snap_cheese, snap_eggs, snap_milk, snap_fish,
                             snap_liquids, snap_grains, snap_fruits, snap_nuts, snap_oils, snap_beans, snap_spices,
                             snap_potatoes, snap_coffee_tea, snap_sugar, snap_vegetables)
-  
   snap_totals <- rowSums(snap_by_category)
   
   ## IF For Input Check #################################################################################################
@@ -498,9 +527,9 @@ food_calculations <- function(cex_data, general_data, isForInputCheck = FALSE){
                                         nuts_production_n, fruits_production_n, oils_production_n,
                                         beans_production_n, spices_production_n, potatoes_production_n,
                                         coffee_tea_production_n, sugar_production_n, vegetables_production_n)
- 
+   print("total food")
+  print(total_food_production_totals)
   total_food_production_n <- rowSums(total_food_production_totals)
-  
   fah_food <- cbind(fah_beef_n, fah_pork_n, fah_chicken_n, fah_cheese_n, fah_eggs_n, fah_milk_n,
                     fah_fish_n, fah_liquids_n, fah_grains_n, fah_nuts_n, fah_fruits_n, 
                     fah_oils_n, fah_beans_n, fah_spices_n, fah_potatoes_n, fah_coffee_tea_n,
@@ -513,6 +542,8 @@ food_calculations <- function(cex_data, general_data, isForInputCheck = FALSE){
                      snap_fish, snap_liquids, snap_grains, snap_nuts, snap_fruits, snap_oils,
                      snap_beans, snap_spices, snap_potatoes, snap_coffee_tea, snap_sugar,
                      snap_vegetables)
+  print("snap")
+  print(snap_food)
   food_by_sources <- data.frame( group = c("Beef", "Pork", "Chicken", "Cheese", "Eggs",
                                            "Milk", "Fish", "Liquids", "Grains", "Nuts",
                                            "Fruits", "Oils", "Beans", "Spices", "Potatoes",
