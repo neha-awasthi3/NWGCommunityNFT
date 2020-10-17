@@ -5,7 +5,6 @@ source("aboutText.R")
 source("communityTool.R")
 #install.packages("DT")
 library(DT)
-
 ######################################################################### WEBSITE ######################################
 
 ui <- fluidPage(
@@ -83,8 +82,8 @@ ui <- fluidPage(
         tabPanel("Map"), 
         tabPanel("Projections",
                  h3("Use the slider bars to adjust certain categories. ",
-                      "Magnitude on the sliders represent percentage of the ",
-                      "original category is used."),
+                      "Value of the sliders represent percentage of the ",
+                      "original category that is used."),
                  fluidRow(
                     column(4, 
                     sliderInput("beef_consumption", h5("Beef Consumption"), 
@@ -92,7 +91,7 @@ ui <- fluidPage(
                     checkboxInput("beef_beans_replacement", h5("Replace Beef Consumption with Bean Consumption"))),
                     column(4, sliderInput("bean_consumption", h5("Bean Consumption"), 
                              min=75, max=125, step=5, value=100)),
-                    column(4, sliderInput("car_motorcycle_use", h5("Car and Motorscycle Transportation"), 
+                    column(4, sliderInput("car_motorcycle_use", h5("Car and Motorcycle Transportation"), 
                              min=75, max=125, step=5, value=100))
                     ),
                  fluidRow(dataTableOutput('projectionsTable'))
@@ -211,15 +210,15 @@ server <- function(input, output, session){
     list(title = "Number of Dogs")
   )))
     
-    
+  
   output$projectionsTable <- renderDataTable({
     updateAll(cex_data(), general_data(), passenger_cars_miles_year(), motorcycles_miles_year(), light_trucks_miles_year(), bus_miles_year(), 
               heavy_trucks_miles_year(), wastewater_treatment_factor_input(), total_treated_waterwater_input(), therms_by_business_input(), 
               therms_by_residents_input(), electricity_by_businesses(), electricity_by_residents(), region(), avg_cats_per_person(), 
-              avg_dogs_per_person(), beef_consumption_input(), beef_beans_replacement_input())},
+              avg_dogs_per_person(), TRUE, beef_consumption_input(), beef_beans_replacement_input())},
     options = list(dom  = '<"top">lrt<"bottom">ip',
                    columns = list (
-                     list(title = "Block Group"),
+                     list(title = ""),
                      list(title = "Food"),
                      list(title = "Pets"),
                      list(title = "Wastewater"),
@@ -227,7 +226,8 @@ server <- function(input, output, session){
                      list(title = "Electricity"),
                      list(title = "Natural Gas"),
                      list(title = "Total")
-                   )))
+                   ),
+                   include.rownames = FALSE))
   
   
   
@@ -249,11 +249,11 @@ server <- function(input, output, session){
   )
 }
 
-## Update calculations functions
+############ Update calculations functions -- FOR TABLES ####################################################################
 updateAll <- function(cex_data, general_data, passenger_cars_miles_year, motorcycle_miles_year, light_trucks_miles_year, bus_miles_year, 
                       heavy_trucks_miles_year, wastewater_removal_factor, total_treated_wastewater, therms_by_business, therms_by_residents, 
                       electricity_by_businesses, electricity_by_residents, region, avg_cats_per_person, avg_dogs_per_person,
-                      beef_consumption_change=100, beans_replace_beef=FALSE){
+                      isProjection=FALSE, beef_consumption_change=100, beans_replace_beef=FALSE){
   population_data <- general_data$Total.Population.of.BG
   total_food_production_totals <- food_calculations(cex_data, general_data, FALSE, beef_consumption_change, beans_replace_beef)
   
@@ -303,11 +303,25 @@ updateAll <- function(cex_data, general_data, passenger_cars_miles_year, motorcy
   #                                           "Total" <- combined_by_block_group_n)
   #combined_by_category_n_table["Total" ,] <- colSums(combined_by_category_n_table)
   #combined_by_block_group_n[,"Total"] <- rowSums(combined_by_category_n_table)
+  if(isProjection){
+    sums <- colSums(combined_by_category_n_table)
+    combined_by_category_n_table <- data.frame("Food" <- sums[2],
+                                               "Pets" <- sums[3],
+                                               "Wastewater" <- sums[4],
+                                               "Transportation" <- sums[5],
+                                               "Electricity" <- sums[6],
+                                               "Natural Gas" <- sums[7],
+                                               "Total" <- sums[8])
+    # had been trying to add weird former column names as row names 
+    # this wa pushing the data over so it didn't line up with the column names
+    # this fixed that
+    row.names(combined_by_category_n_table) <- c("")
+  }
   combined_by_category_n_table <- round(combined_by_category_n_table, 3)
   return(combined_by_category_n_table)
 }
 
-
+################## GRAPHS #############################################################################################################################
 summary_graphs_filtered <- function(blockgroups, cex_data, general_data, passenger_cars_miles_year, motorcycle_miles_year, light_trucks_miles_year, 
                                     bus_miles_year, heavy_trucks_miles_year, wastewater_removal_factor, total_treated_wastewater, therms_by_business, 
                                     therms_by_residents, electricity_by_businesses, electricity_by_residents, region, avg_cats_per_person, avg_dogs_per_person){

@@ -1,0 +1,8 @@
+Clean Up-Items:
+
+-Make helpful error in case of wrong file upload
+-speed
+-Per capita -- summary and input verification
+-csv or excel file upload?
+-optional per block gorup or overall (pets, fertilizer)
+-highlight suspicous input on input verification
