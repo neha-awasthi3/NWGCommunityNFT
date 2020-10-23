@@ -63,6 +63,7 @@ ui <- fluidPage(
     ),
     
     mainPanel(
+      width = 9,
       tabsetPanel(
         tabPanel("About", 
                  fluidRow(aboutText) #aboutText defined in aboutText.R
@@ -77,32 +78,33 @@ ui <- fluidPage(
                  fluidRow(style="padding:5%", column = 12, plotOutput("plot1")),
                  fluidRow(style="padding:5%", column = 12, plotOutput("plot2")),
                  fluidRow(column = 1, dataTableOutput('table1') )         
-        ),
+        )
+    #    ,
         
-        tabPanel("Map"), 
-        tabPanel("Projections",
-                 h3("Use the slider bars to adjust certain categories. ",
-                      "Value of the sliders represent percentage of the ",
-                      "original category that is used."),
-                 fluidRow(
-                    column(4, 
-                    sliderInput("beef_consumption", h5("Beef Consumption"), 
-                             min=75, max=125, step=5, value=100),
-                    checkboxInput("beef_beans_replacement", h5("Replace Beef Consumption with Bean Consumption"))),
-                    column(4, sliderInput("bean_consumption", h5("Bean Consumption"), 
-                             min=75, max=125, step=5, value=100)),
-                    column(4, sliderInput("car_motorcycle_use", h5("Car and Motorcycle Transportation"), 
-                             min=75, max=125, step=5, value=100))
-                    ),
-                 fluidRow(dataTableOutput('projectionsTable'))
-                 ),
-        tabPanel("Check Input",
-                 fluidRow(radioButtons("totalOrPerCapita", label="Doesn't do anything yet", choices = c("Total", "Per Capita"),
-                                       selected="Total")),
-                 fluidRow(HTML("Population and Number of Cats and Dogs Per Block Group")),
-                 fluidRow(dataTableOutput('table3')),
-                 fluidRow(HTML("Kilograms of Food Per Category Per Block Group")),
-                 fluidRow(dataTableOutput('table2')))
+      #  tabPanel("Map"), 
+      #  tabPanel("Projections",
+      #           h3("Use the slider bars to adjust certain categories. ",
+      #                "Value of the sliders represent percentage of the ",
+      #                "original category that is used."),
+      #           fluidRow(
+      #              column(4, 
+      #              sliderInput("beef_consumption", h5("Beef Consumption"), 
+      #                       min=75, max=125, step=5, value=100),
+      #              checkboxInput("beef_beans_replacement", h5("Replace Beef Consumption with Bean Consumption"))),
+      #              column(4, sliderInput("bean_consumption", h5("Bean Consumption"), 
+      #                       min=75, max=125, step=5, value=100)),
+      #              column(4, sliderInput("car_motorcycle_use", h5("Car and Motorcycle Transportation"), 
+      #                       min=75, max=125, step=5, value=100))
+      #              ),
+      #           fluidRow(dataTableOutput('projectionsTable'))
+      #           ),
+      #  tabPanel("Check Input",
+      #           fluidRow(radioButtons("totalOrPerCapita", label="Doesn't do anything yet", choices = c("Total", "Per Capita"),
+      #                                 selected="Total")),
+      #           fluidRow(HTML("Population and Number of Cats and Dogs Per Block Group")),
+      #           fluidRow(dataTableOutput('table3')),
+      #           fluidRow(HTML("Kilograms of Food Per Category Per Block Group")),
+      #           fluidRow(dataTableOutput('table2')))
         
       )
     )
