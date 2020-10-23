@@ -7,24 +7,7 @@ library(ggrepel)
 library("RColorBrewer")
 library(gridExtra)
 
-
-## Fertilizer data -- add
-
-## Future Notes
-## draw population from census data so don't have to upload?
-## stat factors -- waste water (maybe by locality)
-## electricity could be associated by region and if enter zipcode(s) that could draw
-## pat w envi sci r other tool institutional
-
-## hosting -- use Amazon S3 or Dropbox -- both remote, arbitrary data storage
-
-## Look into
-## tidy census
-## snap is by census track
-## us avg with different methods
-
-
-## Data
+## Data -- Charlottesville data commented out
 
 #cex_data <- read.csv("charlottesville_footprint.csv", header = TRUE, stringsAsFactors = FALSE, strip.white = TRUE)
 #general_data <- read.csv("generalData.csv", header = TRUE, stringsAsFactors = FALSE, strip.white = TRUE)
@@ -33,17 +16,12 @@ library(gridExtra)
 block_groups <- c()
 
 us_avg_meal_per <- read.csv("avg_meal_percentage.csv", header = TRUE, stringsAsFactors = FALSE, strip.white = TRUE)
-# need to fix us_avg_meal_per
-#food_to_weight <- read.csv("food_to_weight.csv", header = TRUE, stringsAsFactors = FALSE, strip.white = TRUE)
-#food_out_cost <- read.csv("food_out_cost.csv", header = TRUE, stringsAsFactors = FALSE, strip.white = TRUE)
-
 constants <- read_excel("constants.xlsx")
 food_out_cost <- read_excel("constants.xlsx", sheet = "foodOutCost")
 food_out_cost$Average_Cost_Per_Meal <- as.numeric(food_out_cost$Average_Cost_Per_Meal)
 food_to_weight <- read_excel("constants.xlsx", sheet = "FAH $ to Weight")
 food_constants <- read_excel("Constants.xlsx", sheet = "foodFactors")
 snap_to_weight <- read_excel("Constants.xlsx", sheet = "SNAP $ to Weight")
-#food_out_cost <- read_excel(constants, sheet = ) ## NEED TO ADD
 meal_percentages <- read_excel("Constants.xlsx", sheet = "mealPercentages")
 pet_constants <- read_excel("constants.xlsx", sheet = "pet")
 pet_constants$Cats <- as.numeric(pet_constants$Cats)
@@ -60,8 +38,7 @@ total_therms_by_business <- 5902852.02  # Charlottesville's numbers
 wastewater_removal_factor <- 0.79       # Charlottesville's numbers
 
 
-#kg_to_lb <- 2.20462
-kg_to_lb <- misc_constants$Kg_to_lb
+kg_to_lb <- misc_constants$Kg_to_lb # 2.20462
 
 
 ## FOOD ###############################################################################################################
@@ -141,8 +118,6 @@ food_calculations <- function(cex_data, general_data, isForInputCheck = FALSE,
     fah_weights[,87] * (1 - meal_percentages$`Percent of Total Food Weight`[12]) -
     fah_weights[,103] * (1 - meal_percentages$`Percent of Total Food Weight`[12]) -
     fah_weights[,129] * (1 - meal_percentages$`Percent of Total Food Weight`[12])
-  print(fah_beef_n)
-  print("*********************")
   fah_pork_n <- rowSums(fah_weights[, pork_col]) - fah_weights[,31] * (2/3) - fah_weights[,36] * (2/3) -
     fah_weights[,87] * (1 - meal_percentages$`Percent of Total Food Weight`[11]) -
     fah_weights[,103] * (1 - meal_percentages$`Percent of Total Food Weight`[11]) -
@@ -205,8 +180,6 @@ food_calculations <- function(cex_data, general_data, isForInputCheck = FALSE,
   beef_multiplier <- beef_percentage_change / 100
   diff <- fah_beef_n - fah_beef_n * beef_multiplier
   fah_beef_n <- fah_beef_n - diff
-  print("after diff")
-  print(fah_beef_n)
   if(beans_replace_beef){
     fah_beans_n <- fah_beans_n + diff
   }
@@ -217,7 +190,6 @@ food_calculations <- function(cex_data, general_data, isForInputCheck = FALSE,
                           fah_nuts_n, fah_oils_n, fah_beans_n, fah_spices_n, fah_potatoes_n,
                           fah_coffee_tea_n, fah_sugar_n, fah_vegetables_n)
   fah_n <- rowSums(fah_category_n)
-  ## liquids is diff, and fruit
   ## FAFH ###############################################################################################################
   fafh_col_lookup <- c("X1133_X",	"X1134_X",	"X1135_X",	"X1136_X",	"X1138_X",
                        "X1139_X",	"X1140_X",	"X1141_X",	"X1143_X",	"X1144_X",
@@ -269,14 +241,6 @@ food_calculations <- function(cex_data, general_data, isForInputCheck = FALSE,
   #fafh_n <- rowSums(fafh_per_category_n)
   
   ## SNAP ###############################################################################################################
-  # Charlottesville's
-  # snap_percentages <- c(.079, .079, .0790, .12, .12,  .12, .108, .108, .198, .198,
-  #                       .164, .164, .164, .164, .19, .19, .19, .02, .02, .02, 0.02,
-  #                       .02, .042, .042, .028, .028, .028, .028, .107, .107, .107,
-  #                       .107, .022, .022, .06, .06, .06)
-  # num_of_households <- c(383, 344, 399, 566, 511, 321, 770, 476, 809, 700, 408, 593, 733,
-  #                        527, 685, 274, 473, 729, 590, 508, 324, 173, 719, 453, 513, 561,
-  #                        396, 244, 418, 238, 265, 655, 597, 403, 606, 504, 540)
   snap_percentages <- as.numeric(general_data[,'Percent.of.Households.on.SNAP'])
   num_of_households <- as.numeric(general_data[,'Households..total.'])
   households_on_snap <- snap_percentages * num_of_households
@@ -544,14 +508,6 @@ food_calculations <- function(cex_data, general_data, isForInputCheck = FALSE,
                      snap_beans, snap_spices, snap_potatoes, snap_coffee_tea, snap_sugar,
                      snap_vegetables)
  
-  # print("snap")
-  #print(snap_food)
-  #print("snap sum")
-  #print(rowSums(snap_food))
-  print("fah")
-  print(rowSums(fah_food))
-  print((fah_food[1,]))
-  print("________________________")
   food_by_sources <- data.frame( group = c("Beef", "Pork", "Chicken", "Cheese", "Eggs",
                                            "Milk", "Fish", "Liquids", "Grains", "Nuts",
                                            "Fruits", "Oils", "Beans", "Spices", "Potatoes",
@@ -564,25 +520,6 @@ food_calculations <- function(cex_data, general_data, isForInputCheck = FALSE,
                                            sum(coffee_tea_production_n, na.rm=T), sum(sugar_production_n, na.rm=T), sum(vegetables_production_n, na.rm=T)))
   return(total_food_production_totals)
 }
-# total_food_production_totals <- food_calculations(cex_data)
-# beef_production_n <- total_food_production_totals[,1]
-# pork_production_n <- total_food_production_totals[,2]
-# chicken_production_n <- total_food_production_totals[,3]
-# cheese_production_n <- total_food_production_totals[,4]
-# eggs_production_n <- total_food_production_totals[,5]
-# milk_production_n <- total_food_production_totals[,6]
-# fish_production_n <- total_food_production_totals[,7]
-# liquids_production_n <- total_food_production_totals[,8]
-# grains_production_n <- total_food_production_totals[,9]
-# nuts_production_n <- total_food_production_totals[,10]
-# fruits_production_n <- total_food_production_totals[,11]
-# oils_production_n <- total_food_production_totals[,12]
-# beans_production_n <- total_food_production_totals[,13]
-# spices_production_n <- total_food_production_totals[,14]
-# potatoes_production_n<- total_food_production_totals[,15]
-# coffee_tea_production_n <- total_food_production_totals[,16]
-# sugar_production_n <- total_food_production_totals[,17]
-# vegetables_production_n <- total_food_production_totals[,18]
 
 ## PETS ###############################################################################################################
 pet_calculations <- function(general_data, avg_cats_per_person, avg_dogs_per_person, isForInputCheck = FALSE){
@@ -721,8 +658,6 @@ transportation_calculations <- function(cex_data, motorcycles_miles_year_input, 
   transportation_n <- motorcycle_n + passenger_car_n + buses_n + light_truck_n + heavy_truck_n
   return(transportation_n)
 }
-## using Charlottesville's numbers for Motorcycle Miles per year, etc...
-#transport_n <- transportation_calculations(cex_data, 378052, 199774486, 26507935, 611792, 4301174)
 ## ELECTRICITY ########################################################################################################
 electricity_calculations <- function(cex_data, general_data, electricity_by_residents_input, electricity_by_businesses_input, egridRegion){
   dollars_spent_electricity <- cex_data[,"X3063_X"]
@@ -759,16 +694,11 @@ electricity_calculations <- function(cex_data, general_data, electricity_by_resi
 ## NATURAL GAS ########################################################################################################
 ## Find therms for residents in the census block
 nat_gas_calculations <- function(cex_data_input, general_data, total_therms_by_residents, total_therms_by_business){
-  #if(is.na(cex_data_input)){
-  #  cex_data_input = cex_data
-  #}
-  
   spend_on_nat_gas <- cex_data_input$X3059_X
   avg_rate_for_residents <- sum(spend_on_nat_gas, na.rm=T) / total_therms_by_residents
   therms_by_residents <- spend_on_nat_gas / avg_rate_for_residents 
 
   ## Find the therms for businesses in the census block
-#  num_of_business <- general_data[,"Number.of.Businesses.in.BG"]
   therms_by_business <- total_therms_by_business /(sum(general_data[,"Number.of.Businesses.in.BG"], na.rm=T)) * 
     general_data[,"Number.of.Businesses.in.BG"]/(sum(general_data[,"Number.of.Businesses.in.BG"], na.rm=T))
 
@@ -784,13 +714,9 @@ nat_gas_calculations <- function(cex_data_input, general_data, total_therms_by_r
 #nat_gas_n <- nat_gas_calculations(cex_data, therms_by_residents, therms_by_business)  
 ## WASTEWATER #########################################################################################################
 wastewater_calculations <- function(wastewater_removal_factor, total_treated_wastewater, population_per_BG){
-  # if 0, use Charlottesville numbers
-   if(wastewater_removal_factor == 0){
-    total_treated_wastewater <- 1398475760  # Charlottesville's numbers
-  }
-  if(wastewater_removal_factor == 0){
-      wastewater_removal_factor <- 0.79       # Charlottesville's numbers
-  }
+  # total_treated_wastewater <- 1398475760  # Charlottesville's numbers
+  # wastewater_removal_factor <- 0.79       # Charlottesville's numbers
+  
   wastewater_n <- c()
   for (census_block in population_per_BG){ #as.numeric(general_data$Total.Population.of.BG)){
     wastewater_for_block <- total_treated_wastewater / census_block
@@ -801,6 +727,7 @@ wastewater_calculations <- function(wastewater_removal_factor, total_treated_was
   return(wastewater_n)
 }
 #wastewater_n <- wastewater_calculations(wastewater_removal_factor, total_treated_wastewater, as.numeric(general_data$Total.Population.of.BG))
+
 ## COMBINED TOTAL ######################################################################################################
 ## No fertilizer yet
 # combined_by_block_group_n <- total_food_production_n  + pet_food_n + pet_waste_n + wastewater_n +
