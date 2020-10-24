@@ -15,9 +15,9 @@ Data Inputs:
 <br />
 <h4>Number of people/businesses per Census Block Group:</h4>  This population data can be found at American FactFinder, using the most recent 5 year American Communities Survey (ACS).
 <br />
-<h4>Percentage of households on SNAP:</h4>
+<h4>Percentage of households on SNAP:</h4> This information also should be entered into the Block Group Data Input file. 
 <br />
-<h4>Number of Cats/Dogs:</h4> If data is available, you can enter the exact number of cats and dogs in the census block groups. If this data is not available, the national average number of cats per person and dogs per person will be used to make a rough calculation.
+<h4>Number of Cats/Dogs:</h4> The average number of cats and dogs per person for all of the block groups combined. The default values of 0.267 cats per person and 0.242 dogs per person are the national average.
 <br />
 <h4>Gallons of Wastewater:</h4> This information should be available at the local municipal wastewater treatment plant.
 <br />
