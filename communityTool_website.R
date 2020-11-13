@@ -169,6 +169,7 @@ server <- function(input, output, session){
                                                     list(title = "Transportation"),
                                                     list(title = "Electricity"),
                                                     list(title = "Natural Gas"),
+                                                    list(title = "Fertilizer"),
                                                     list(title = "Total")
                                                   )))
 
@@ -227,6 +228,7 @@ server <- function(input, output, session){
                      list(title = "Transportation"),
                      list(title = "Electricity"),
                      list(title = "Natural Gas"),
+                     list(title = "Fertilizer"),
                      list(title = "Total")
                    ),
                    include.rownames = FALSE))
@@ -286,13 +288,14 @@ updateAll <- function(cex_data, general_data, passenger_cars_miles_year, motorcy
   transportation_n <- transportation_calculations(cex_data, motorcycle_miles_year, passenger_cars_miles_year, light_trucks_miles_year, bus_miles_year, heavy_trucks_miles_year)
   electricity_n <- electricity_calculations(cex_data, general_data, electricity_by_residents, electricity_by_businesses, region)
   nat_gas_n <- nat_gas_calculations(cex_data, general_data, therms_by_residents, therms_by_business)
+  fert_n <- nat_gas_calculations(cex_data, general_data, therms_by_residents, therms_by_business)
   
   combined_by_block_group_n <- total_food_production_n  + pet_food_n + pet_waste_n + wastewater_n +
-    transportation_n + electricity_n + nat_gas_n
+    transportation_n + electricity_n + nat_gas_n + fert_n
   all_n <- sum(total_food_production_n, na.rm=T) + sum(pet_food_n, na.rm=T) + sum(pet_waste_n, na.rm=T) + sum(wastewater_n, na.rm=T) +
-    sum(transportation_n, na.rm=T) + sum(electricity_n, na.rm=T) + sum(nat_gas_n, na.rm=T)
+    sum(transportation_n, na.rm=T) + sum(electricity_n, na.rm=T) + sum(nat_gas_n, na.rm=T) + sum(fert_n, na.rm=T)
   combined_by_category_n_table<-cbind(cex_data$ID, total_food_production_n, pet_food_n + pet_waste_n,
-                                      wastewater_n, transportation_n, electricity_n, nat_gas_n, combined_by_block_group_n)
+                                      wastewater_n, transportation_n, electricity_n, nat_gas_n, fert_n, combined_by_block_group_n)
   # This started giving an index column and pushing over the
   # data by one while keeping the column name, so changed to cbind
   #combined_by_category_n_table <- data.frame("Block Group" <- cex_data$ID,
@@ -313,6 +316,7 @@ updateAll <- function(cex_data, general_data, passenger_cars_miles_year, motorcy
                                                "Transportation" <- sums[5],
                                                "Electricity" <- sums[6],
                                                "Natural Gas" <- sums[7],
+                                               "Fertilizer" <- sums[7],
                                                "Total" <- sums[8])
     # had been trying to add weird former column names as row names 
     # this wa pushing the data over so it didn't line up with the column names
@@ -355,11 +359,12 @@ summary_graphs_filtered <- function(blockgroups, cex_data, general_data, passeng
   transportation_n <- transportation_calculations(cex_data, motorcycle_miles_year, passenger_cars_miles_year, light_trucks_miles_year, bus_miles_year, heavy_trucks_miles_year)
   electricity_n <- electricity_calculations(cex_data, general_data, electricity_by_residents, electricity_by_businesses, region)
   nat_gas_n <- nat_gas_calculations(cex_data, general_data, therms_by_residents, therms_by_business)
+  fert_n <- nat_gas_calculations(cex_data, general_data, therms_by_residents, therms_by_business)
   
   combined_by_block_group_n <- total_food_production_n  + pet_food_n + pet_waste_n + wastewater_n +
-    transportation_n + electricity_n + nat_gas_n
+    transportation_n + electricity_n + nat_gas_n + fert_n
   all_n <- sum(total_food_production_n, na.rm=T) + sum(pet_food_n, na.rm=T) + sum(pet_waste_n, na.rm=T) + sum(wastewater_n, na.rm=T) +
-    sum(transportation_n, na.rm=T) + sum(electricity_n, na.rm=T) + sum(nat_gas_n, na.rm=T)
+    sum(transportation_n, na.rm=T) + sum(electricity_n, na.rm=T) + sum(nat_gas_n, na.rm=T) + sum(fert_n, na.rm=T)
   a_filtered <- ggplot(combined_by_category_filtered(blockgroups, cex_data$ID, total_food_production_n, pet_food_n, pet_waste_n, wastewater_n, transportation_n, electricity_n, nat_gas_n), aes(x="", y=value, fill=group)) + 
     geom_bar(stat="identity", width = 1, color="white") + coord_polar("y", start = 0) + theme_void() +
     scale_fill_viridis(discrete = TRUE, option="C") +
@@ -406,11 +411,12 @@ stacked_graphs_filtered<- function(blockgroups, cex_data, general_data, passenge
   transportation_n <- transportation_calculations(cex_data, motorcycle_miles_year, passenger_cars_miles_year, light_trucks_miles_year, bus_miles_year, heavy_trucks_miles_year)
   electricity_n <- electricity_calculations(cex_data, general_data, electricity_by_residents, electricity_by_businesses, region)
   nat_gas_n <- nat_gas_calculations(cex_data, general_data, therms_by_residents, therms_by_business)
+  fert_n <- nat_gas_calculations(cex_data, general_data, therms_by_residents, therms_by_business)
   
   combined_by_block_group_n <- total_food_production_n  + pet_food_n + pet_waste_n + wastewater_n +
-    transportation_n + electricity_n + nat_gas_n
+    transportation_n + electricity_n + nat_gas_n + fert_n
   all_n <- sum(total_food_production_n, na.rm=T) + sum(pet_food_n, na.rm=T) + sum(pet_waste_n, na.rm=T) + sum(wastewater_n, na.rm=T) +
-    sum(transportation_n, na.rm=T) + sum(electricity_n, na.rm=T) + sum(nat_gas_n, na.rm=T)
+    sum(transportation_n, na.rm=T) + sum(electricity_n, na.rm=T) + sum(nat_gas_n, na.rm=T) + sum(fert_n, na.rm=T)
   food_by_sources2 <- food_by_sources_filtered(blockgroups, cex_data$ID, beef_production_n, pork_production_n, chicken_production_n, cheese_production_n, eggs_production_n, milk_production_n, fish_production_n, liquids_production_n, grains_production_n, nuts_production_n, fruits_production_n, oils_production_n, beans_production_n, spices_production_n, potatoes_production_n, coffee_tea_production_n, sugar_production_n, vegetables_production_n)
   food_by_sources2$x <- 1
   c_filtered <- ggplot(food_by_sources2, aes(x=x, y=value, fill=group))+geom_col()+
