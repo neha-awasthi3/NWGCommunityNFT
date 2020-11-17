@@ -764,7 +764,7 @@ wastewater_calculations <- function(wastewater_removal_factor, total_treated_was
 #             sum(transportation_n) / all_n,
 #             sum(wastewater_n) / all_n)
 
-combined_by_category_filtered <- function(block_groups, blockgroups, total_food_production_n, pet_food_n, pet_waste_n, wastewater_n, transportation_n, electricity_n, nat_gas_n){
+combined_by_category_filtered <- function(block_groups, blockgroups, total_food_production_n, pet_food_n, pet_waste_n, wastewater_n, transportation_n, electricity_n, nat_gas_n, fert_n){
   block_groups <- as.numeric(block_groups)
   blockgroups <- as.numeric(block_groups)
   all_n_filtered <- sum(total_food_production_n[block_groups %in% blockgroups], na.rm=T) + 
@@ -773,12 +773,14 @@ combined_by_category_filtered <- function(block_groups, blockgroups, total_food_
     sum(wastewater_n[block_groups %in% blockgroups], na.rm=T) +
     sum(transportation_n[block_groups %in% blockgroups], na.rm=T) + 
     sum(electricity_n[block_groups %in% blockgroups], na.rm=T) + 
-    sum(nat_gas_n[block_groups %in% blockgroups], na.rm=T)
+    sum(nat_gas_n[block_groups %in% blockgroups], na.rm=T)+
+    sum(fert_n[block_groups %in% blockgroups], na.rm=T)
   return(data.frame(
-  group = c("Electricity", "Food",  "Natural Gas", "Pets", "Transportation", "Wastewater"),
+  group = c("Electricity", "Food",  "Natural Gas", "Pets", "Transportation", "Wastewater", "Fertilizer"),
   value = c(sum(electricity_n[block_groups %in% blockgroups], na.rm=T) / all_n_filtered,
             sum(total_food_production_n[block_groups %in% blockgroups], na.rm=T) / all_n_filtered, 
             sum(nat_gas_n[block_groups %in% blockgroups], na.rm=T) / all_n_filtered,
+            sum(fert_n[block_groups %in% blockgroups], na.rm=T) / all_n_filtered,
             (sum(pet_food_n[block_groups %in% blockgroups], na.rm=T) + 
                sum(pet_waste_n[block_groups %in% blockgroups], na.rm=T)) / all_n_filtered, 
             sum(transportation_n[block_groups %in% blockgroups], na.rm=T) / all_n_filtered,
