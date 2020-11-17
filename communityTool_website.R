@@ -365,7 +365,7 @@ summary_graphs_filtered <- function(blockgroups, cex_data, general_data, passeng
     transportation_n + electricity_n + nat_gas_n + fert_n
   all_n <- sum(total_food_production_n, na.rm=T) + sum(pet_food_n, na.rm=T) + sum(pet_waste_n, na.rm=T) + sum(wastewater_n, na.rm=T) +
     sum(transportation_n, na.rm=T) + sum(electricity_n, na.rm=T) + sum(nat_gas_n, na.rm=T) + sum(fert_n, na.rm=T)
-  a_filtered <- ggplot(combined_by_category_filtered(blockgroups, cex_data$ID, total_food_production_n, pet_food_n, pet_waste_n, wastewater_n, transportation_n, electricity_n, nat_gas_n), aes(x="", y=value, fill=group)) + 
+  a_filtered <- ggplot(combined_by_category_filtered(blockgroups, cex_data$ID, total_food_production_n, pet_food_n, pet_waste_n, wastewater_n, transportation_n, electricity_n, nat_gas_n,fert_n), aes(x="", y=value, fill=group)) + 
     geom_bar(stat="identity", width = 1, color="white") + coord_polar("y", start = 0) + theme_void() +
     scale_fill_viridis(discrete = TRUE, option="C") +
     ggtitle("Nitrogen by General Category") +
@@ -421,7 +421,7 @@ stacked_graphs_filtered<- function(blockgroups, cex_data, general_data, passenge
   food_by_sources2$x <- 1
   c_filtered <- ggplot(food_by_sources2, aes(x=x, y=value, fill=group))+geom_col()+
     scale_fill_viridis(discrete = TRUE, option="C")
-  combined_by_category2 <- combined_by_category_filtered(blockgroups, cex_data$ID, total_food_production_n, pet_food_n, pet_waste_n, wastewater_n, transportation_n, electricity_n, nat_gas_n)
+  combined_by_category2 <- combined_by_category_filtered(blockgroups, cex_data$ID, total_food_production_n, pet_food_n, pet_waste_n, wastewater_n, transportation_n, electricity_n, nat_gas_n, fert_n)
   combined_by_category2$x <- 1
   d_filtered <- ggplot(combined_by_category2, aes(x=x, y=value, fill=group))+geom_col()+
     scale_fill_viridis(discrete = TRUE, option="C")
